@@ -1,0 +1,12 @@
+pylint
+pylint-flask
+pylint-flask-sqlalchemy
+flask
+flask-cors
+flask-sqlalchemy
+sqlalchemy
+psycopg2
+pyjwt
+configparser
+requests
+alembic
