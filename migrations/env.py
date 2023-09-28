@@ -1,8 +1,9 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import create_engine, engine_from_config
 from sqlalchemy import pool
 
+import os
 from alembic import context
 from api.model import db
 from api.model import character, classes, dice, items, spellbook, spells, user
@@ -28,17 +29,16 @@ target_metadata = db.Model.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-
-import os
-url = os.environ.get('DATABASE_URL')
-if url is None:
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL is None:
     print('Could not get environment variable for DATABASE_URL. Using default in alembic.ini.')
-    url = config.get_main_option("sqlalchemy.url")
-print(f"Using database url: {url}")
+    DATABASE_URL = config.get_main_option("sqlalchemy.url")
 
-def run_migrations() -> None:
+print(f"Using database url: {DATABASE_URL}")
+
+def run_offline_migrations() -> None:
     context.configure(
-        url=url,
+        url=DATABASE_URL,
         target_metadata=target_metadata,
         dialect_opts={"paramstyle": "named"},
     )
@@ -46,4 +46,18 @@ def run_migrations() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-run_migrations()
+def run_migrations() -> None:
+    connectable = create_engine(DATABASE_URL)
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection, target_metadata=target_metadata
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+if context.is_offline_mode():
+    run_offline_migrations()
+else:
+    run_migrations()
