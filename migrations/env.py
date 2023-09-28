@@ -46,6 +46,7 @@ def run_migrations_offline() -> None:
     if url is None:
         print('Could not get environment variable for DATABASE_URL. Using default in alembic.ini.')
         url = config.get_main_option("sqlalchemy.url")
+    print(f"Using database url: {url}")
 
 
     context.configure(
