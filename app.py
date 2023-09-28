@@ -29,6 +29,11 @@ set_config_path(os.path.dirname(os.path.realpath(__file__)))
 
 
 dburl = os.getenv('DATABASE_URL')
+envPort = os.getenv('PORT')
+
+if envPort is None:
+   envPort = 5000
+
 if dburl is not None:
   app.config['SQLALCHEMY_DATABASE_URI'] = dburl
 else:
@@ -59,3 +64,6 @@ with app.app_context():
     db.session.commit()
     RoleService.initRoles()
 
+if __name__ == "__main__":
+    Logger.debug("Starting Cyther-API on port " + str(envPort))
+    app.run(host='0.0.0.0', port=envPort)
