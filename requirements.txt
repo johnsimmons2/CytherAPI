@@ -10,3 +10,4 @@ pyjwt
 configparser
 requests
 alembic
+gunicorn
