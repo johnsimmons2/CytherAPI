@@ -1,6 +1,6 @@
 from api.service.jwthelper import get_access_token, verify_token, decode_token
 from api.controller import UnAuthorized
-from jwt.exceptions import InvalidSignatureError
+from jwt import InvalidSignatureError
 from api.service.dbservice import UserService
 
 
