@@ -44,7 +44,6 @@ else:
 db.init_app(app)
 
 # Logging middleware
-
 @app.before_request
 def before_request():
     Logger.debug(f"Request: {request.method} {request.path}")
