@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from flask import Flask, request
 from flask_cors import CORS
 from sqlalchemy.engine import URL
@@ -9,9 +10,9 @@ from api.controller.usercontroller import users
 from api.controller.charactercontroller import characters
 from api.model import db
 from api.model.user import User
-from api.service.dbservice import RoleService
+from api.service.dbservice import RoleService, UserService
 
-
+load_dotenv()
 # Setup logger
 Logger.config_set_handler(FormattedLogHandler().set_color_dates(True))
 
@@ -63,6 +64,7 @@ with app.app_context():
     db.create_all()
     db.session.commit()
     RoleService.initRoles()
+    UserService.initUsers()
 
 if __name__ == "__main__":
     Logger.debug("Starting Cyther-API on port " + str(envPort))

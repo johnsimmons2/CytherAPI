@@ -1,4 +1,5 @@
 import json
+import os
 import hashlib
 import api.service.jwthelper as jwth
 from types import SimpleNamespace
@@ -12,6 +13,7 @@ from api.service.config import config
 from api.loghandler.logger import Logger
 from api.model import db
 from sqlalchemy.orm import sessionmaker, Query
+from sqlalchemy import desc
 
 
 class AuthService:
@@ -19,11 +21,11 @@ class AuthService:
     def addDefaultRole(cls, user):
         roles = Query(UserRole, db.session).filter_by(userId=user.id).all()
         if roles is None or roles == []:
-            user.roles.append(Query(Role, db.session).filter_by(roleName='Player').first())
+            user.roles.append(Query(Role, db.session).order_by(desc(Role.level)).first())
             db.session.commit()
 
     @classmethod
-    def register_user(cls, user: User):       
+    def register_user(cls, user: User):
         nUser = User()
         nUser.salt = str(uuid4())
         nUser.password = cls._hash_password(user.password, nUser.salt)
@@ -35,7 +37,7 @@ class AuthService:
         db.session.commit()
         cls.addDefaultRole(nUser)
         return True
-    
+
     @classmethod
     def _hash_password(cls, password: str, salt: str) -> str:
         secret = config('security')
@@ -79,10 +81,36 @@ class RoleService:
     def initRoles(cls):
         cls.query.filter_by(roleName='Admin').first() or db.session.add(Role(roleName='Admin', level=0))
         cls.query.filter_by(roleName='Player').first() or db.session.add(Role(roleName='Player', level=1))
+        cls.query.filter_by(roleName='Guest').first() or db.session.add(Role(roleName='Guest', level=2))
         db.session.commit()
 
 class UserService:
     query = Query(User, db.session)
+
+    @classmethod
+    def getCurrentUserRoles(cls):
+        username = jwth.decode_token(jwth.get_access_token())['username']
+        if username is not None:
+            return cls.query.filter_by(username=str.lower(username)).first().roles
+        else:
+            return None
+
+    @classmethod
+    def initUsers(cls):
+      existingAdmin = cls.query.filter_by(username='admin').first()
+      if existingAdmin is None:
+        admin = User()
+        admin.username = 'admin'
+        admin.email = 'admin@cyther.net'
+        admin.fName = 'Admin'
+        admin.lName = 'Admin'
+        admin.salt = str(uuid4())
+        admin.password = AuthService._hash_password(os.getenv('ADMIN_PS'), admin.salt)
+        admin.created = date.today()
+        admin.lastOnline = date.today()
+        admin.roles.append(RoleService.query.filter_by(roleName='Admin').first())
+        db.session.add(admin)
+      db.session.commit()
 
     @classmethod
     def getAll(cls):
@@ -91,7 +119,7 @@ class UserService:
     @classmethod
     def get(cls, id: str):
         return cls.query.filter_by(id=id).first()
-    
+
     @classmethod
     def getByUsername(cls, username: str):
         return cls.query.filter_by(username=str.lower(username)).first()
@@ -104,7 +132,7 @@ class UserService:
             return cls.query.filter_by(email=user.email).first() is not None
         else:
             return False
-        
+
     @classmethod
     def updateUser(cls, id: str, user: User):
         Logger.debug('Updating user with id: ' + id)
@@ -116,7 +144,7 @@ class UserService:
         dbUser.lastOnline = date.today()
 
         db.session.commit()
-            
+
 
 class SpellbookService:
     @classmethod
@@ -131,7 +159,7 @@ class CharacterService:
     @classmethod
     def getAll(cls):
         return Query(Character, db.session).all()
-    
+
     @classmethod
     def getPlayerCharacters(cls):
         query = Query(Character, db.session)
@@ -149,4 +177,3 @@ class ItemsService:
     @classmethod
     def get(cls, id: str):
         return Items.query.filter_by(id=id).first()
-    

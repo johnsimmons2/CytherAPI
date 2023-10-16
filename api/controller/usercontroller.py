@@ -1,5 +1,5 @@
 import json
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from api.service.dbservice import UserService
 from api.model.user import User
 from api.decorator.auth.authdecorators import isAuthorized, isAdmin
@@ -17,7 +17,6 @@ def get():
     return UserService.getAll()
 
 @users.route("/users/<id>", methods = ['GET'])
-@isAuthorized
 def getUser(id: str):
     return UserService.get(id)
 
@@ -33,20 +32,20 @@ def updateUser(id: str):
 @users.route("/auth", methods = ['GET'])
 @isAuthorized
 def checkAuth():
-    return OK()
+    return OK(UserService.getCurrentUserRoles())
 
 @users.route("/auth/token", methods = ['POST'])
 def authenticate():
     if request.get_json() is None:
         return BadRequest('User was not provided or something was wrong with the input fields.')
-    
+
     user = User(**json.loads(request.data))
     if user.password is None:
         return BadRequest('No password was provided.')
 
     if user.username is None and user.email is None:
         return BadRequest('No username or email was provided.')
-    
+
     authenticated = AuthService.authenticate_user(user)
     if authenticated is not None:
         return OK(dict({"token": str(authenticated)}))
@@ -57,14 +56,14 @@ def authenticate():
 def post():
     if request.get_json() is None:
         return BadRequest('No user was provided or the input was invalid.')
-    
+
     user = User(**json.loads(request.data))
     if user.password is None:
         return BadRequest('No password was provided.')
 
     if user.username is None and user.email is None:
         return BadRequest('No username or email was provided.')
-    
+
     if UserService.exists(user):
         return BadRequest('User already exists with that email or username.')
 

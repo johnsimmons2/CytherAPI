@@ -1,6 +1,7 @@
 pylint
 pylint-flask
 pylint-flask-sqlalchemy
+python-dotenv
 flask
 flask-cors
 flask-sqlalchemy
