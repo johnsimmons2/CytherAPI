@@ -24,10 +24,9 @@ class User(db.Model):
     email: str = db.Column(String, unique=True)
     fName: str = db.Column(String)
     lName: str = db.Column(String)
+    lastOnline: DateTime = db.Column(DateTime)
+    created: DateTime = db.Column(DateTime)
     password = db.Column(String)
     salt = db.Column(String)
-    created = db.Column(DateTime)
-    lastOnline = db.Column(DateTime)
-    
+
     roles = db.relationship('Role', secondary='user_role', backref='user')
-    

@@ -8,11 +8,10 @@ def isAdmin(func):
     def wrapper(*arg, **kwargs):
         try:
             token = decode_token(get_access_token())
-            isadmin = False
-            if 'admin' in token.keys():
-                isadmin = token['admin']
-            if isadmin:
-                return func(*arg, **kwargs)
+            user = UserService.getByUsername(token['username'])
+            for role in user.roles:
+                if role.level == 0:
+                    return func(*arg, **kwargs)
             return UnAuthorized('The user does not have authorization for this route.')
         except InvalidSignatureError:
             return UnAuthorized('The token is not valid.')

@@ -14,7 +14,7 @@ users = Blueprint('users', __name__)
 @isAdmin
 @isAuthorized
 def get():
-    return UserService.getAll()
+    return OK(UserService.getAll())
 
 @users.route("/users/<id>", methods = ['GET'])
 def getUser(id: str):
