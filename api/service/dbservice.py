@@ -69,13 +69,23 @@ class AuthService:
         else:
             if AuthService._hash_password(secret, user.salt) == user.password:
                 user.lastOnline = date.today()
+                db.session.commit()
                 cls.addDefaultRole(user)
                 return jwth.create_token(user)
             else:
+                Logger.error('Incorrect password!')
                 return None
 
 class RoleService:
     query = Query(Role, db.session)
+
+    @classmethod
+    def getAll(cls):
+        return cls.query.all()
+
+    @classmethod
+    def roleWithLevel(cls, level: int):
+        return cls.query.filter_by(level=level).first()
 
     @classmethod
     def initRoles(cls):
@@ -94,6 +104,13 @@ class UserService:
             return cls.query.filter_by(username=str.lower(username)).first().roles
         else:
             return None
+
+    @classmethod
+    def updateUserRoles(cls, id, roles):
+        user = cls.get(id)
+        user.roles = []
+        user.roles = roles
+        db.session.commit()
 
     @classmethod
     def initUsers(cls):

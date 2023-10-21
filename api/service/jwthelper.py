@@ -16,7 +16,12 @@ def create_token(user: User) -> str:
         }, config('security')['jwtsecret'], "HS256")
 
 def decode_token(token: str) -> dict:
-    return jwt.decode(token, config('security')['jwtsecret'], "HS256")
+    try:
+        result = jwt.decode(token, config('security')['jwtsecret'], "HS256")
+        return result
+    except Exception as exception:
+        Logger.error('JWT Token decoding failed due to exception.', exception)
+    return None
 
 def verify_token(token: str) -> bool:
     try:

@@ -1,7 +1,7 @@
 import json
 from flask import Blueprint, request, jsonify
-from api.service.dbservice import UserService
-from api.model.user import User
+from api.service.dbservice import UserService, RoleService
+from api.model.user import User, Role
 from api.decorator.auth.authdecorators import isAuthorized, isAdmin
 from api.controller import OK, UnAuthorized, BadRequest, Posted
 from api.service.jwthelper import create_token
@@ -27,6 +27,33 @@ def updateUser(id: str):
         return BadRequest('No user was provided or the input was invalid.')
     user = User(**json.loads(request.data))
     UserService.updateUser(id, user)
+    return OK()
+
+@users.route("/users/<id>/roles", methods = ['GET'])
+@isAuthorized
+@isAdmin
+def getUserRoles(id: str):
+    result = UserService.get(id).roles
+    if result is None:
+        return BadRequest('No user was found with that ID.')
+    return OK(result)
+
+@users.route("/users/<id>/roles", methods = ['POST'])
+@isAuthorized
+@isAdmin
+def updateUserRoles(id: str):
+    if request.get_json() is None:
+        return BadRequest('No user was provided or the input was invalid.')
+    roles = [role for role in json.loads(request.data)]
+    userRoles: list[Role] = []
+    if not isinstance(roles, list):
+        return BadRequest('Roles must be a list of roles.')
+    for role in roles:
+        if role['level'] is None:
+            return BadRequest('Roles must have a level.')
+        userRoles.append(RoleService.roleWithLevel(role['level']))
+
+    UserService.updateUserRoles(id, userRoles)
     return OK()
 
 @users.route("/auth", methods = ['GET'])
@@ -68,3 +95,7 @@ def post():
         return BadRequest('User already exists with that email or username.')
 
     return Posted(AuthService.register_user(user))
+
+@users.route("/roles", methods = ['GET'])
+def getRoles():
+    return OK(RoleService.getAll())
