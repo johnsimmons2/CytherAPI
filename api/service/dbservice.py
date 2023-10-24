@@ -1,6 +1,7 @@
 import json
 import os
 import hashlib
+from api.model.classes import *
 import api.service.jwthelper as jwth
 from types import SimpleNamespace
 from datetime import date
@@ -15,6 +16,22 @@ from api.model import db
 from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy import desc
 
+
+class ClassService:
+    query = Query(Class, db.session)
+    querySubclass = Query(Subclass, db.session)
+
+    @classmethod
+    def getAll(cls):
+        return cls.query.all()
+
+    @classmethod
+    def get(cls, id: str):
+        return cls.query.filter_by(id=id).first()
+
+    @classmethod
+    def getSubclass(cls, id: str):
+        return cls.querySubclass.filter_by(id=id).first()
 
 class AuthService:
     @classmethod
@@ -36,7 +53,7 @@ class AuthService:
         db.session.add(nUser)
         db.session.commit()
         cls.addDefaultRole(nUser)
-        return True
+        return nUser
 
     @classmethod
     def _hash_password(cls, password: str, salt: str) -> str:
@@ -84,6 +101,10 @@ class RoleService:
         return cls.query.all()
 
     @classmethod
+    def get(cls, id: str):
+        return cls.query.filter_by(id=id).first()
+
+    @classmethod
     def roleWithLevel(cls, level: int):
         return cls.query.filter_by(level=level).first()
 
@@ -107,7 +128,9 @@ class UserService:
 
     @classmethod
     def updateUserRoles(cls, id, roles):
-        user = cls.get(id)
+        user: User = cls.get(id)
+        if user is None:
+            return None
         user.roles = []
         user.roles = roles
         db.session.commit()
@@ -136,6 +159,13 @@ class UserService:
     @classmethod
     def get(cls, id: str):
         return cls.query.filter_by(id=id).first()
+
+    @classmethod
+    def delete(cls, id: str):
+        row = cls.query.filter_by(id=id).first()
+        db.session.delete(row)
+        db.session.commit()
+        return True
 
     @classmethod
     def getByUsername(cls, username: str):
@@ -174,13 +204,136 @@ class SpellbookService:
 
 class CharacterService:
     @classmethod
+    def createSpellbookForCharacter(cls):
+      pass
+
+    @classmethod
+    def makeStatsheetForCharacter(cls, stats) -> (Statsheet, list[str]):
+        errors = []
+        statsheet: Statsheet = Statsheet()
+        if stats['str'] is None:
+            errors.append('Strength is required.')
+        statsheet.strength = stats['str']
+        if stats['cha'] is None:
+            errors.append('Charisma is required.')
+        statsheet.charisma = stats['cha']
+        if stats['int'] is None:
+            errors.append('Intelligence is required.')
+        statsheet.intelligence = stats['int']
+        if stats['wis'] is None:
+            errors.append('Wisdom is required.')
+        statsheet.wisdom = stats['wis']
+        if stats['con'] is None:
+            errors.append('Constitution is required.')
+        statsheet.constitution = stats['con']
+        if stats['dex'] is None:
+            errors.append('Dexterity is required.')
+        statsheet.dexterity = stats['dex']
+
+        if stats['exp'] is None:
+            statsheet.exp = 0
+        else:
+            statsheet.exp = stats['exp']
+
+        if stats['level'] is None:
+            statsheet.level = 1
+        else:
+            statsheet.level = stats['level']
+
+        if stats['health'] is None:
+            # TODO: Calculate health based on class and level
+            errors.append('Health must be calculated on the front end for now.')
+        else:
+            statsheet.health = stats['health']
+
+        return (statsheet, errors)
+
+    @classmethod
+    def createCharacter(cls, characterJson):
+        # Errors to return if something goes wrong
+        errors = []
+        # The ID of the character once created
+        resultId = None
+        # Who will own this character
+        user = None
+        character = Character()
+
+        if characterJson['name'] is None:
+            errors.append('Name is required.')
+            return (resultId, errors)
+        character.name = characterJson['name']
+
+        if characterJson['race'] is None:
+            errors.append('Race is required.')
+            return (resultId, errors)
+        character.race = characterJson['race']
+
+        if characterJson['userId'] is None:
+            # Check token to see if they are an admin. If they are, this is an NPC. Otherwise, attach to userId.
+            if jwth.has_role_level(0):
+                character.type = 1
+            else:
+                character.type = 0
+                user: User = UserService.getByUsername(jwth.get_username())
+        else:
+            character.type = 0
+            user: User = UserService.get(characterJson['userId'])
+
+        if characterJson['stats'] is None:
+            errors.append('Stats are required [str, cha, int, wis, con, dex].')
+            return (resultId, errors)
+        else:
+            stats = characterJson['stats']
+            (x, y) = cls.makeStatsheetForCharacter(stats)
+            statsheet: Statsheet = x
+            errs: list[str] = y
+
+            if len(errs) > 0:
+                errors.extend(errs)
+            else:
+                statsheet.character = character
+
+                if characterJson['classId'] is not None:
+                    clazz = ClassService.get(characterJson['classId'])
+                    if clazz is None:
+                        errors.append('Class with id ' + str(characterJson['classId']) + ' does not exist.')
+                        return (resultId, errors)
+                    statsheet.clazz = clazz
+                if characterJson['subclassId'] is not None:
+                    subclass = ClassService.getSubclass(characterJson['subclassId'])
+                    if subclass is None:
+                        errors.append('Subclass with id ' + str(characterJson['subclassId']) + ' does not exist.')
+                        return (resultId, errors)
+                    statsheet.subclass = subclass
+                # TODO: Calculate the spellbook based on the user's level and class
+                # TODO: Duplicate the statsheet
+                # statsheet.spellbook = cls.createSpellbookForCharacter()
+                db.session.add(statsheet)
+                character.statsheet = statsheet
+        # If this character was meant to be attached to a user
+        if user is not None and character.type == 0:
+            user.characters.append(character)
+        db.session.commit()
+        return (resultId, errors)
+
+    @classmethod
     def getAll(cls):
         return Query(Character, db.session).all()
 
     @classmethod
-    def getPlayerCharacters(cls):
+    def getAllPlayerCharacters(cls):
         query = Query(Character, db.session)
         return query.filter_by(type=0).all()
+
+    @classmethod
+    def getAllNPCs(cls):
+        query = Query(Character, db.session)
+        return query.filter_by(type=1).all()
+
+    @classmethod
+    def getCharactersByUserId(cls, id: str):
+        query = Query(Character, db.session).join(User.characters)
+        return query.all()
 
     @classmethod
     def get(cls, id: str):

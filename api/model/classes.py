@@ -20,7 +20,9 @@ class Class(db.Model):
     name: str = db.Column(String)
     description: str = db.Column(String)
 
+    subclasses = db.relationship('Subclass', secondary="class_subclasses", backref='class')
     feats = db.relationship('Feat', secondary='class_feats', backref='class')
+    statsheet = relationship("Statsheet", uselist=False, back_populates="clazz", cascade="all,delete")
 
 @dataclass
 class Subclass(db.Model):
@@ -30,6 +32,7 @@ class Subclass(db.Model):
     description: str = db.Column(String)
     name: str = db.Column(String)
 
+    statsheet = db.relationship('Statsheet', uselist=False, back_populates='subclass', cascade="all,delete")
     feats = db.relationship('Feat', secondary='subclass_feats', backref='subclass')
 
 class SubClassFeats(db.Model):
@@ -37,6 +40,12 @@ class SubClassFeats(db.Model):
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     subclassId = db.Column(Integer, ForeignKey('subclass.id'))
     featId = db.Column(Integer, ForeignKey('feat.id'))
+
+class ClassSubclasses(db.Model):
+    __tablename__ = 'class_subclasses'
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    classId = db.Column(Integer, ForeignKey('class.id'))
+    subclassId = db.Column(Integer, ForeignKey('subclass.id'))
 
 class RaceFeats(db.Model):
     __tablename__ = 'race_feats'

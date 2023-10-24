@@ -7,6 +7,19 @@ from api.model.user import User
 from flask import request
 
 
+def get_username() -> str:
+    token = decode_token(get_access_token())
+    if token is None: return None
+    return token['username']
+
+def has_role_level(level: int) -> bool:
+    token = decode_token(get_access_token())
+    if token is None: return False
+    for role in token['roles']:
+        if role['level'] <= level:
+            return True
+    return False
+
 def create_token(user: User) -> str:
     return jwt.encode({
         'username': user.username,

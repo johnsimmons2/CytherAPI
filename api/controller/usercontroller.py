@@ -6,6 +6,8 @@ from api.decorator.auth.authdecorators import isAuthorized, isAdmin
 from api.controller import OK, UnAuthorized, BadRequest, Posted
 from api.service.jwthelper import create_token
 from api.service.dbservice import AuthService
+from api.loghandler.logger import Logger
+import api.service.jwthelper as jwth
 
 
 users = Blueprint('users', __name__)
@@ -19,6 +21,18 @@ def get():
 @users.route("/users/<id>", methods = ['GET'])
 def getUser(id: str):
     return UserService.get(id)
+
+@users.route("/users/<id>", methods = ['DELETE'])
+@isAdmin
+@isAuthorized
+def deleteUser(id: str):
+    if id is None or id == '' or id == '1':
+        return BadRequest("Cannot delete user with given ID of {id}".format(id=id))
+    deleted = UserService.delete(id)
+    if deleted:
+        return OK()
+    else:
+        return BadRequest('No user was found with that ID.')
 
 @users.route("/users/<id>", methods = ['POST'])
 @isAuthorized
@@ -49,10 +63,16 @@ def updateUserRoles(id: str):
     if not isinstance(roles, list):
         return BadRequest('Roles must be a list of roles.')
     for role in roles:
+        if isinstance(role, int):
+            userRoles.append(RoleService.get(role))
+            continue
+        elif not isinstance(role, dict):
+            return BadRequest('Roles must be a list of roles.')
         if role['level'] is None:
             return BadRequest('Roles must have a level.')
         userRoles.append(RoleService.roleWithLevel(role['level']))
 
+    Logger.debug(userRoles)
     UserService.updateUserRoles(id, userRoles)
     return OK()
 
@@ -94,8 +114,17 @@ def post():
     if UserService.exists(user):
         return BadRequest('User already exists with that email or username.')
 
-    return Posted(AuthService.register_user(user))
+    user = AuthService.register_user(user)
+    if user is None:
+        return BadRequest('User could not be created.')
+
+    token = jwth.create_token(user)
+    if token is None:
+        return BadRequest('User could not be authenticated.')
+
+    return Posted(token)
 
 @users.route("/roles", methods = ['GET'])
 def getRoles():
     return OK(RoleService.getAll())
+

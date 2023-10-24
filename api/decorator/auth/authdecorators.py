@@ -23,6 +23,24 @@ def isAdmin(func):
   wrapper.__name__ = func.__name__
   return wrapper
 
+def isPlayer(func):
+  def wrapper(*arg, **kwargs):
+    try:
+      if os.getenv('ENVIRONMENT') == 'development':
+        return func(*arg, **kwargs)
+      token = decode_token(get_access_token())
+      if token is None:
+        return BadRequest('The token is not valid.')
+      user = UserService.getByUsername(token['username'])
+      for role in user.roles:
+        if role.level <= 1:
+            return func(*arg, **kwargs)
+      return UnAuthorized('The user does not have authorization for this route.')
+    except InvalidSignatureError:
+      return UnAuthorized('The token is not valid.')
+  wrapper.__name__ = func.__name__
+  return wrapper
+
 def isAuthorized(func):
   def wrapper(*arg, **kwargs):
     if os.getenv('ENVIRONMENT') == 'development':
