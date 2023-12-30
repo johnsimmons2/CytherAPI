@@ -9,6 +9,7 @@ from api.service.config import config, set_config_path
 from api.controller.usercontroller import users
 from api.controller.charactercontroller import characters
 from api.model import db
+from api.controller.ext_contentcontroller import ext_content
 from api.model.user import User
 from api.service.dbservice import RoleService, UserService
 
@@ -24,6 +25,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 app.register_blueprint(users)
 app.register_blueprint(characters)
+
+# Register external content
+app.register_blueprint(ext_content)
 
 # Register db
 set_config_path(os.path.dirname(os.path.realpath(__file__)))

@@ -21,6 +21,7 @@ def handle(status: str, data: any = None, success: bool = False):
         response.headers.add("Access-Control-Allow-Methods", "*")
     response.status = status
     response.content_type = 'application/json'
+
     response.data = json.dumps({"success": success, "data": data}, cls=EnhancedJSONEncoder)
     return response
 
