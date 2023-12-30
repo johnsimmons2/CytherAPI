@@ -14,6 +14,10 @@ def isAdmin(func):
       if token is None:
         return BadRequest('The token is not valid.')
       user = UserService.getByUsername(token['username'])
+
+      if user is None:
+        return UnAuthorized('The user does not have authorization for this route.')
+      
       for role in user.roles:
         if role.level == 0:
             return func(*arg, **kwargs)
@@ -32,6 +36,10 @@ def isPlayer(func):
       if token is None:
         return BadRequest('The token is not valid.')
       user = UserService.getByUsername(token['username'])
+
+      if user is None:
+        return UnAuthorized('The user does not have authorization for this route.')
+
       for role in user.roles:
         if role.level <= 1:
             return func(*arg, **kwargs)
@@ -62,6 +70,10 @@ def userOwnsId(func):
     if token is None:
       return BadRequest('The token is not valid.')
     user = UserService.getByUsername(token['username'])
+
+    if user is None:
+      return UnAuthorized('The user does not have authorization for this route.')
+
     if 'id' in kwargs:
       if user.id == kwargs['id']:
         return func(*arg, **kwargs)
