@@ -29,14 +29,6 @@ def upgrade() -> None:
     sa.Column('active', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('user_characters',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('userId', sa.Integer(), nullable=True),
-    sa.Column('characterId', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['characterId'], ['character.id'], ),
-    sa.ForeignKeyConstraint(['userId'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
     op.create_table('class_subclasses',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('classId', sa.Integer(), nullable=True),
@@ -93,7 +85,6 @@ def downgrade() -> None:
     op.drop_column('character', 'basestatsheetid')
     op.drop_column('character', 'statsheetid')
     op.drop_table('class_subclasses')
-    op.drop_table('user_characters')
     op.drop_table('ext_content')
     op.drop_table('campaign')
     # ### end Alembic commands ###
