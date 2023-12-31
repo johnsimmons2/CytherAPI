@@ -27,6 +27,7 @@ class Character(db.Model):
     statsheet = relationship("Statsheet", uselist=False, foreign_keys=[statsheetid], backref="statsheetid", cascade="all,delete")
 
 class Statsheet(db.Model):
+    __tablename__ = 'statsheet'
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     characterId = db.Column(Integer, db.ForeignKey('character.id'), unique=True)
     spellbookId = db.Column(Integer, db.ForeignKey('spellbook.id'), unique=True)
