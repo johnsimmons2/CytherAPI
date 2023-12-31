@@ -19,8 +19,14 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    pass
+    op.create_table('ext_content',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('key', sa.String(length=255), nullable=True),
+    sa.Column('name', sa.String(length=255), nullable=True),
+    sa.Column('content', sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
 
 
 def downgrade() -> None:
-    pass
+    op.drop_table('ext_content')

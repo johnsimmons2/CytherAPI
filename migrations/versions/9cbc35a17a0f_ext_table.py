@@ -29,13 +29,6 @@ def upgrade() -> None:
     sa.Column('active', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('ext_content',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('key', sa.String(length=255), nullable=True),
-    sa.Column('name', sa.String(length=255), nullable=True),
-    sa.Column('content', sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
     op.create_table('user_characters',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('userId', sa.Integer(), nullable=True),
