@@ -42,8 +42,20 @@ def getCharacter(id: str):
 def makeCharacter():
     if request.get_json() is None:
         return BadRequest('No character was provided or the input was invalid.')
+    
     characterJson = json.loads(request.data)
     createdId, errors = CharacterService.createCharacter(characterJson)
+    print(createdId, errors)
     if createdId:
         return Posted({"characterId": createdId})
     return BadRequest(errors)
+
+@characters.route("/characters/<id>", methods = ['PATCH'])
+@isAdmin
+@isAuthorized
+def updateCharacter(id: str):
+    if request.get_json() is None:
+        return BadRequest('No character was provided or the input was invalid.')
+    characterJson = json.loads(request.data)
+    CharacterService.updateCharacter(id, characterJson)
+    return OK()

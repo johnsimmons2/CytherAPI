@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from flask import Flask, request
 from flask_cors import CORS
 from sqlalchemy.engine import URL
+from api.controller import campaigncontroller
 from api.loghandler.logger import Logger
 from api.loghandler.formatted import FormattedLogHandler
 from api.service.config import config, set_config_path
@@ -25,6 +26,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 app.register_blueprint(users)
 app.register_blueprint(characters)
+app.register_blueprint(campaigncontroller.campaigns)
 
 # Register external content
 app.register_blueprint(ext_content)

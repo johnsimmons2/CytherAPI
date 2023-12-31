@@ -97,7 +97,7 @@ def authenticate():
     if authenticated is not None:
         return OK(dict({"token": str(authenticated)}))
     else:
-        return UnAuthorized("Whoza whutsit?!")
+        return UnAuthorized("Authentication failed")
 
 @users.route("/auth/register", methods = ['POST'])
 def post():

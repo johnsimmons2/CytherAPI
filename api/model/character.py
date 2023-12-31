@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from . import db
@@ -5,18 +6,25 @@ from .dice import Hitdice
 from api.model import classes
 
 
+@dataclass
 class Character(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    statsheetid: int = db.Column(Integer, ForeignKey('statsheet.id'), unique=True)
+    basestatsheetid: int = db.Column(Integer, ForeignKey('statsheet.id'), unique=True)
     name: str = db.Column(String)
     # 0: Player
     # 1: NPC
     type: int = db.Column(Integer)
     race: str = db.Column(String)
 
+    # If the campaign compatability number matches the campaign ID, the character may be used.
+    campaignCompatability: int = db.Column(Integer)
+
     # Untouched basis. Only updated on level up or manual changes.
-    basestatsheet = relationship("Statsheet", uselist=False, back_populates="character", cascade="all,delete")
+    basestatsheet = relationship("Statsheet", uselist=False, foreign_keys=[basestatsheetid], backref="basestatsheetid", cascade="all,delete")
+    
     # This statsheet will change and reflect what is available to the user.
-    statsheet = relationship("Statsheet", uselist=False, back_populates="character", cascade="all,delete")
+    statsheet = relationship("Statsheet", uselist=False, foreign_keys=[statsheetid], backref="statsheetid", cascade="all,delete")
 
 class Statsheet(db.Model):
     id = db.Column(Integer, primary_key=True, autoincrement=True)
@@ -42,7 +50,6 @@ class Statsheet(db.Model):
 
     clazz = relationship("Class", uselist=False, back_populates="statsheet", cascade="all,delete")
     subclass = relationship("Subclass", uselist=False, back_populates="statsheet", cascade="all,delete")
-    character = relationship("Character", uselist=False, back_populates="statsheet", cascade="all,delete")
     spellbook = relationship("Spellbook", uselist=False, back_populates="statsheet", cascade="all,delete")
     hitdice = relationship("Hitdice", back_populates="statsheet", cascade="all,delete")
 
