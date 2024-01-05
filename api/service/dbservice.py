@@ -102,7 +102,7 @@ class AuthService:
     def register_user(cls, user: User):
         nUser = User()
         nUser.salt = str(uuid4())
-        nUser.password = cls._hash_passwocampaigns
+        nUser.password = cls._hash_password(user.password, nUser.salt)
         return nUser
 
     @classmethod
