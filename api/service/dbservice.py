@@ -102,9 +102,10 @@ class AuthService:
 
     @classmethod
     def register_user(cls, user: User):
+        salt = str(uuid4())
         nUser = User()
-        nUser.salt = str(uuid4())
-        nUser.password = cls._hash_password(user.password, nUser.salt)
+        nUser.salt = salt
+        nUser.password = cls._hash_password(user.password, salt)
         nUser.username = user.username
         
         nUser.email = user.email
@@ -134,28 +135,31 @@ class AuthService:
         return None
 
     @classmethod
-    def authenticate_user(cls, user: User) -> User | None:
+    def authenticate_user(cls, inputUser: User) -> User | None:
         query = Query(User, db.session)
-        secret = user.password
-        if user.username is not None:
-            user = query.filter_by(username=str.lower(user.username)).first()
-        elif user.email is not None:
-            user = query.filter_by(email=user.email).first()
+        user = None
+        
+        secret = inputUser.password
+        if inputUser.username is not None:
+            user = query.filter(User.username.ilike(f"%{inputUser.username}%")).first()
+        elif inputUser.email is not None:
+            user = query.filter_by(email=inputUser.email).first()
         else:
             Logger.error('Attempted to authenticate without email or username provided, or both were provided.')
             return None
+        
         if not user:
             Logger.error('no user')
             return None
+        
+        if AuthService._hash_password(secret, user.salt) == user.password:
+            user.lastOnline = date.today()
+            cls.addDefaultRole(user)
+            db.session.commit()
+            return jwth.create_token(user)
         else:
-            if AuthService._hash_password(secret, user.salt) == user.password:
-                user.lastOnline = date.today()
-                db.session.commit()
-                cls.addDefaultRole(user)
-                return jwth.create_token(user)
-            else:
-                Logger.error('Incorrect password!')
-                return None
+            Logger.error('Incorrect password!')
+            return None
 
 class RoleService:
     query = Query(Role, db.session)
@@ -186,7 +190,7 @@ class UserService:
     def getCurrentUserRoles(cls):
         username = jwth.decode_token(jwth.get_access_token())['username']
         if username is not None:
-            return cls.query.filter_by(username=str.lower(username)).first().roles
+            return cls.query.filter(User.username.ilike(f"%{username}%")).first().roles
         else:
             return None
 
