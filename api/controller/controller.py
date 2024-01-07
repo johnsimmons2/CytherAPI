@@ -40,3 +40,7 @@ def UnAuthorized(result = None) -> Tuple:
 @staticmethod
 def BadRequest(result = None) -> Tuple:
     return handle('400 BAD REQUEST', result, False)
+
+@staticmethod
+def Conflict(result = None) -> Tuple:
+    return handle('409 CONFLICT', result, False)

@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from api.service.dbservice import UserService, RoleService
 from api.model.user import User, Role
 from api.decorator.auth.authdecorators import isAuthorized, isAdmin
-from api.controller import OK, UnAuthorized, BadRequest, Posted
+from api.controller import OK, UnAuthorized, BadRequest, Posted, Conflict
 from api.service.jwthelper import create_token
 from api.service.dbservice import AuthService
 from api.loghandler.logger import Logger
@@ -112,7 +112,7 @@ def post():
         return BadRequest('No username or email was provided.')
 
     if UserService.exists(user):
-        return BadRequest('User already exists with that email or username.')
+        return Conflict('User already exists with that email or username.')
 
     user = AuthService.register_user(user)
     if user is None:

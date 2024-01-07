@@ -91,6 +91,8 @@ class ClassService:
         return cls.querySubclass.filter_by(id=id).first()
 
 class AuthService:
+
+    # Adds the current lowest level Role to the user if they have no roles.
     @classmethod
     def addDefaultRole(cls, user):
         roles = Query(UserRole, db.session).filter_by(userId=user.id).all()
@@ -103,6 +105,18 @@ class AuthService:
         nUser = User()
         nUser.salt = str(uuid4())
         nUser.password = cls._hash_password(user.password, nUser.salt)
+        nUser.username = user.username
+        
+        nUser.email = user.email
+        nUser.fName = user.fName
+        nUser.lName = user.lName
+
+        nUser.created = date.today()
+        nUser.lastOnline = date.today()
+
+        db.session.add(nUser)
+        cls.addDefaultRole(nUser)
+        db.session.commit()
         return nUser
 
     @classmethod
