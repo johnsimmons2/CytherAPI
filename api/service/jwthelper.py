@@ -40,6 +40,7 @@ def verify_token(token: str) -> bool:
     try:
         result = jwt.decode(token, config('security')['jwtsecret'], "HS256")
         expired = datetime.datetime.utcnow() > datetime.datetime.utcfromtimestamp(result['exp'])
+        print(result)
         if expired:
             Logger.warn('JWT Token is expired')
             return False
