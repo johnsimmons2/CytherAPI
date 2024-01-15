@@ -57,5 +57,8 @@ def updateCharacter(id: str):
     if request.get_json() is None:
         return BadRequest('No character was provided or the input was invalid.')
     characterJson = json.loads(request.data)
-    CharacterService.updateCharacter(id, characterJson)
-    return OK()
+    success, errors = CharacterService.updateCharacter(id, characterJson)
+    if success:
+        return Posted()
+    else:
+        return BadRequest(errors)

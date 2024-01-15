@@ -3,9 +3,11 @@ import os
 import hashlib
 from api.model.campaign import Campaign
 from api.model.classes import *
+from api.model.ext_content import Ext_Content
+from api.service.ext_dbservice import Ext_ContentService
 import api.service.jwthelper as jwth
 from types import SimpleNamespace
-from datetime import date
+from datetime import date, datetime
 from uuid import uuid4
 from api.model.user import *
 from api.model.items import *
@@ -17,6 +19,158 @@ from api.model import db
 from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy import desc
 
+
+class FeatService:
+    query = Query(Feat, db.session)
+    raceFeatQuery = Query(RaceFeats, db.session)
+    subClassFeatQuery = Query(SubClassFeats, db.session)
+    classFeatQuery = Query(ClassFeats, db.session)
+
+    @classmethod
+    def getRacialFeats(cls) -> [Feat]:
+        return list(map(lambda x: cls.get(x.id), cls.raceFeatQuery.all()))
+
+    @classmethod
+    def getAll(cls) -> [Feat]:
+        return cls.query.all()
+    
+    @classmethod
+    def get(cls, id: str) -> Feat:
+        return cls.query.filter_by(id=id).first()
+    
+    @classmethod
+    def getByName(cls, name: str) -> Feat:
+        return cls.query.filter_by(name=name).first()
+    
+    @classmethod
+    def update(cls, feat: Feat) -> (Feat | None, [str]):
+        foundFeat = cls.get(feat.id)
+        if foundFeat is not None:
+            foundFeat.name = feat.name
+            foundFeat.description = feat.description
+            foundFeat.prerequisite = feat.prerequisite
+            db.session.commit()
+            return foundFeat, []
+        return None, ["Could not find a feat with the given ID"]
+    
+    @classmethod
+    def createFeat(cls, feat: Feat) -> (Feat | None, [str]):
+        if cls.getByName(feat.name) is not None:
+            return None, ["A feat by this name already exists."]
+        
+        newFeat = Feat()
+        newFeat.name = feat.name
+        newFeat.description = feat.description
+        newFeat.prerequisite = feat.prerequisite
+
+        db.session.add(feat)
+        db.session.commit()
+        Logger.success("Creating a new feat with name: " + feat.name)
+        return newFeat, []
+
+class RaceService:
+    query = Query(Race, db.session)
+    raceFeatQuery = Query(RaceFeats, db.session)
+    featQuery = Query(Feat, db.session)
+
+    @classmethod
+    def delete(cls, id: int):
+        foundClass = cls.query.filter(Race.id == id).first()
+
+        if not foundClass:
+            return False
+        db.session.delete(foundClass)
+        db.session.commit()
+        return True
+
+    # Initialize by gathering races from API.
+    @classmethod
+    def getRacesOnline(cls):
+        raceRefresh: Ext_Content = Ext_ContentService.getByKey('race_refresh')
+        if raceRefresh is None:
+            # Trigger actual refresh
+            # Create the 
+            # refresh key with the current time
+            Ext_ContentService.add(Ext_Content(**{
+                'key': 'race_refresh',
+                'name': 'Last refresh time for Race table',
+                'content': str(datetime.now().timestamp())
+            }))
+            cls._refresh()
+        else:
+            # Check if the refresh is older than 1 day
+            # If it is, trigger refresh
+            # If not, do nothing
+            if ((datetime.now().timestamp()) - float(raceRefresh.content)) >= 60 * 60 * 24:
+                cls._refresh()
+
+    @classmethod
+    def _refresh(cls):
+        from api.service.dnd5eapiservice import Dnd5eAPIService
+        Dnd5eAPIService.getRaces()
+        Logger.debug("Refreshing the race database")
+
+    @classmethod
+    def getAll(cls) -> [Race]:
+        cls.getRacesOnline()
+        return cls.query.all()
+    
+    @classmethod
+    def get(cls, id: str) -> Race:
+        return cls.query.filter_by(id=id).first()
+
+    @classmethod
+    def getByName(cls, name: str) -> Race:
+        return cls.query.filter_by(name=name).first()
+    
+    @classmethod
+    def update(cls, race: Race, feats: List[Feat] | None) -> (int, [str]):
+        foundRace: Race = cls.query.filter(Race.id == race.id).first()
+        success = False
+        errors = []
+
+        if foundRace is not None:
+            if race.name is not None:
+                foundRace.name = race.name
+            if race.description is not None:
+                foundRace.description = race.description
+            if race.size is not None:
+                foundRace.size = race.size
+            if race.languages is not None:
+                foundRace.languages = race.languages
+            if race.alignment is not None:
+                foundRace.alignment = race.alignment
+            if feats is not None and len(feats) > 0:
+                foundRace.feats = feats
+            db.session.add(foundRace)
+            success = True
+        else:
+            errors.append("Could not find a race with the given ID")
+
+        db.session.commit()
+        return success, errors
+
+    @classmethod
+    def createRace(cls, race: Race) -> (int, [str]):
+        if cls.getByName(race.name) is not None:
+            return -1, ["A race by this name already exists."]
+        
+        newRace = Race()
+        newRace.name = race.name
+        newRace.description = race.description
+
+        db.session.add(race)
+        db.session.commit()
+        return True
+    
+    @classmethod
+    def getRaceFeats(cls, raceName: str) -> [Feat]:
+        race = cls.getByName(raceName)
+        if race is not None:
+            raceFeats = cls.raceFeatQuery.filter_by(raceId=race.id).all()
+            feats = map(lambda x: cls.featQuery.filter_by(id=x.featId).first(), raceFeats)
+            return list(feats)
+        return []
 
 class CampaignService:
     query = Query(Campaign, db.session)
@@ -78,8 +232,45 @@ class ClassService:
     query = Query(Class, db.session)
     querySubclass = Query(Subclass, db.session)
 
+    # Initialize by gathering races from API.
+    @classmethod
+    def getClassesOnline(cls):
+        classRefresh: Ext_Content = Ext_ContentService.getByKey('class_refresh')
+        if classRefresh is None:
+            # Trigger actual refresh
+            # Create the 
+            # refresh key with the current time
+            Ext_ContentService.add(Ext_Content(**{
+                'key': 'class_refresh',
+                'name': 'Last refresh time for Class table',
+                'content': str(datetime.now().timestamp())
+            }))
+            cls._refresh()
+        else:
+            # Check if the refresh is older than 1 day
+            # If it is, trigger refresh
+            # If not, do nothing
+            if ((datetime.now().timestamp()) - float(classRefresh.content)) >= 60 * 60 * 24:
+                pass
+            cls._refresh()
+
+    @classmethod
+    def _refresh(cls):
+        from api.service.dnd5eapiservice import Dnd5eAPIService
+        Dnd5eAPIService.getClasses()
+        Logger.debug("Refreshing the class database")
+
+    @classmethod
+    def getSubclassByName(cls, subclassName: str):
+        return cls.querySubclass.filter_by(name=subclassName).first()
+
+    @classmethod
+    def getByName(cls, className: str):
+        return cls.query.filter_by(name=className).first()
+
     @classmethod
     def getAll(cls):
+        cls.getClassesOnline()
         return cls.query.all()
 
     @classmethod
@@ -396,50 +587,59 @@ class CharacterService:
     
     @classmethod
     def updateCharacter(cls, id: str, characterJson):
+        errors = []
+        success = True
+
         character: Character = CharacterService.get(id)
         if character is None:
-            return None
-        
-        if 'name' in characterJson:
-            character.name = characterJson['name']
-        
-        if 'race' in characterJson:
-            character.race = characterJson['race']
-
-        if 'stats' in characterJson:
-            stats = characterJson['stats']
-            statsheet: Statsheet = character.statsheet
-
-            if 'classId' in characterJson:
-                clazz = ClassService.get(characterJson['classId'])
-                if clazz is None:
-                    return 'Class with id ' + str(characterJson['classId']) + ' does not exist.'
-                statsheet.clazz = clazz
-            if 'subclassId' in characterJson:
-                subclass = ClassService.getSubclass(characterJson['subclassId'])
-                if subclass is None:
-                    return 'Subclass with id ' + str(characterJson['subclassId']) + ' does not exist.'
-                statsheet.subclass = subclass
+            errors.append("Could not find a character with the given ID.")
+            success = False
+        else:
+            if 'name' in characterJson:
+                character.name = characterJson['name']
             
-            if 'str' in stats:
-                statsheet.strength = stats['str']
-            if 'cha' in stats:
-                statsheet.charisma = stats['cha']
-            if 'int' in stats:
-                statsheet.intelligence = stats['int']
-            if 'wis' in stats:
-                statsheet.wisdom = stats['wis']
-            if 'con' in stats:
-                statsheet.constitution = stats['con']
-            if 'dex' in stats:
-                statsheet.dexterity = stats['dex']
-            if 'exp' in stats:
-                statsheet.exp = stats['exp']
-            if 'level' in stats:
-                statsheet.level = stats['level']
-            if 'health' in stats:
-                statsheet.health = stats['health']
+            if 'race' in characterJson:
+                character.race = characterJson['race']
+
+            if 'stats' in characterJson:
+                stats = characterJson['stats']
+                statsheet: Statsheet = character.statsheet
+
+                if 'classId' in characterJson:
+                    clazz = ClassService.get(characterJson['classId'])
+                    if clazz is None:
+                        success = False
+                        errors.append('Class with id ' + str(characterJson['classId']) + ' does not exist.')
+                    else:
+                        statsheet.clazz = clazz
+                if 'subclassId' in characterJson:
+                    subclass = ClassService.getSubclass(characterJson['subclassId'])
+                    if subclass is None:
+                        success = False
+                        errors.append('Subclass with id ' + str(characterJson['subclassId']) + ' does not exist.')
+                    else:
+                        statsheet.subclass = subclass
+                
+                if 'str' in stats:
+                    statsheet.strength = stats['str']
+                if 'cha' in stats:
+                    statsheet.charisma = stats['cha']
+                if 'int' in stats:
+                    statsheet.intelligence = stats['int']
+                if 'wis' in stats:
+                    statsheet.wisdom = stats['wis']
+                if 'con' in stats:
+                    statsheet.constitution = stats['con']
+                if 'dex' in stats:
+                    statsheet.dexterity = stats['dex']
+                if 'exp' in stats:
+                    statsheet.exp = stats['exp']
+                if 'level' in stats:
+                    statsheet.level = stats['level']
+                if 'health' in stats:
+                    statsheet.health = stats['health']
         db.session.commit()
+        return (success, errors)
 
 
     @classmethod

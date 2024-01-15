@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+from api.model.character import Character
 from . import db
 
 

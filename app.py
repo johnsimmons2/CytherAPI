@@ -9,6 +9,9 @@ from api.loghandler.formatted import FormattedLogHandler
 from api.service.config import config, set_config_path
 from api.controller.usercontroller import users
 from api.controller.charactercontroller import characters
+from api.controller.racecontroller import race
+from api.controller.featcontroller import feats
+from api.controller.classcontroller import classes
 from api.model import db
 from api.controller.ext_contentcontroller import ext_content
 from api.model.user import User
@@ -27,6 +30,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.register_blueprint(users)
 app.register_blueprint(characters)
 app.register_blueprint(campaigncontroller.campaigns)
+app.register_blueprint(race)
+app.register_blueprint(feats)
+app.register_blueprint(classes)
 
 # Register external content
 app.register_blueprint(ext_content)

@@ -2,8 +2,10 @@ from dataclasses import dataclass
 from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from . import db
-from .dice import Hitdice
+from api.model.dice import Hitdice
+from api.model.spellbook import Spellbook
 from api.model import classes
+
 
 
 @dataclass
@@ -31,8 +33,6 @@ class Statsheet(db.Model):
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     characterId = db.Column(Integer, db.ForeignKey('character.id'), unique=True)
     spellbookId = db.Column(Integer, db.ForeignKey('spellbook.id'), unique=True)
-    clazzId = db.Column(Integer, db.ForeignKey('class.id'), unique=True)
-    subclassId = db.Column(Integer, db.ForeignKey('subclass.id'), unique=True)
 
     exp = db.Column(Integer)
     level = db.Column(Integer)
@@ -49,8 +49,6 @@ class Statsheet(db.Model):
     # 1: Current stats
     type = db.Column(Integer)
 
-    clazz = relationship("Class", uselist=False, back_populates="statsheet", cascade="all,delete")
-    subclass = relationship("Subclass", uselist=False, back_populates="statsheet", cascade="all,delete")
     spellbook = relationship("Spellbook", uselist=False, back_populates="statsheet", cascade="all,delete")
     hitdice = relationship("Hitdice", back_populates="statsheet", cascade="all,delete")
 

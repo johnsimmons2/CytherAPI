@@ -21,8 +21,6 @@ class Ext_ContentService:
     
     @classmethod
     def getAllLikeKey(cls, keyLike):
-        result = cls.query.filter(Ext_Content.key.like('%' + keyLike + '%')).all()
-        print(result)
         return cls.query.filter(Ext_Content.key.like('%' + keyLike + '%')).all()
     
     @classmethod
@@ -47,5 +45,22 @@ class Ext_ContentService:
         content.key = data['key']
         content.name = data['name']
         content.content = data['data']
+        db.session.commit()
+        return True
+    
+    @classmethod
+    def add(cls, content: Ext_Content):
+        if content is None:
+            return False
+        
+        if cls.getByKey(content.key) is not None:
+            return False
+        
+        newContent = Ext_Content()
+        newContent.key = content.key
+        newContent.name = content.name
+        newContent.content = content.content
+
+        db.session.add(newContent)
         db.session.commit()
         return True
