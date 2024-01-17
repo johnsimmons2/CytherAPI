@@ -65,7 +65,7 @@ class Dnd5eAPIService:
                 db.session.commit()
 
     @classmethod
-    def getClass(cls, classIndex: str):
+    def getClass(cls, classIndex: str) -> Dnd5eClassDTO:
         response = requests.get(cls.URL + "/api/classes/" + classIndex)
         Logger.debug(f"Calling: {cls.URL + '/api/classes/' + classIndex}")
         responseJson = response.json()
@@ -110,7 +110,7 @@ class Dnd5eAPIService:
         subclassDto.feats = feats
 
         return subclassDto
-        
+
     @classmethod
     def createFeatsForSubclass(cls, nextRequest: str) -> [Dnd5eFeatDTO]:
         if nextRequest is None:
@@ -133,7 +133,7 @@ class Dnd5eAPIService:
         return feats
 
     @classmethod
-    def getFeatureByIndex(cls, featureIndex: str):
+    def getFeatureByIndex(cls, featureIndex: str) -> Dnd5eFeatDTO:
         response = requests.get(cls.URL + "/api/features/" + featureIndex)
         Logger.debug(f"Calling: {cls.URL + '/api/features/' + featureIndex}")
         responseJson = response.json()
@@ -176,7 +176,7 @@ class Dnd5eAPIService:
         db.session.add(newFeat)
         db.session.commit()
         return newFeat
-    
+
     @classmethod
     def featAsTrait(cls, feat: Feat) -> Dnd5eFeatDTO:
         trait = Dnd5eFeatDTO()
@@ -213,7 +213,7 @@ class Dnd5eAPIService:
         race = RaceService.getByName(raceName)
         if race is None:
             return None
-        
+
         raceDto = Dnd5eRaceDTO()
         raceDto.alignment = race.alignment
         raceDto.languages = race.languages
@@ -241,7 +241,7 @@ class Dnd5eAPIService:
                 raceDto.traits.append(trait)
             else:
                 raceDto.traits.append(cls.getTraitByIndex(feat["index"]))
-        
+
         for bonus in responseJson["ability_bonuses"]:
             traitName = "Ability Score Increase: +" + str(bonus["bonus"]) + " " + bonus["ability_score"]["name"]
             trait = cls.getTraitByName(traitName)
