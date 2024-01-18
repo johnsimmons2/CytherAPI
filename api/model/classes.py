@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 from sqlalchemy import ForeignKey, String, Integer
 from sqlalchemy.orm import relationship, Mapped
 from . import db
@@ -10,7 +10,7 @@ class Feat(db.Model):
     id: int  = db.Column(Integer, primary_key=True, autoincrement=True)
     name: str = db.Column(String, unique=True)
     description: str = db.Column(String)
-    prerequisite: str = db.Column(String)
+    prerequisite: Optional[str] = db.Column(String)
 
 @dataclass
 class Race(db.Model):

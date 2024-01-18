@@ -27,6 +27,20 @@ class FeatService:
     classFeatQuery = Query(ClassFeats, db.session)
 
     @classmethod
+    def delete(cls, id: str):
+        foundFeat = cls.get(id)
+
+        if not foundFeat:
+            return False
+        try:
+            db.session.delete(foundFeat)
+            db.session.commit()
+        except Exception as e:
+            Logger.error(e)
+            return False, [e.__str__()]
+        return True, []
+
+    @classmethod
     def getRacialFeats(cls) -> [Feat]:
         return list(map(lambda x: cls.get(x.id), cls.raceFeatQuery.all()))
 
@@ -43,12 +57,15 @@ class FeatService:
         return cls.query.filter_by(name=name).first()
     
     @classmethod
-    def update(cls, feat: Feat) -> (Feat | None, [str]):
-        foundFeat = cls.get(feat.id)
+    def update(cls, id: int, feat: Feat) -> (Feat | None, [str]):
+        foundFeat = cls.get(id)
         if foundFeat is not None:
-            foundFeat.name = feat.name
-            foundFeat.description = feat.description
-            foundFeat.prerequisite = feat.prerequisite
+            if feat.name is not None:
+                foundFeat.name = feat.name
+            if feat.description is not None:
+                foundFeat.description = feat.description
+            if feat.prerequisite is not None:
+                foundFeat.prerequisite = feat.prerequisite
             db.session.commit()
             return foundFeat, []
         return None, ["Could not find a feat with the given ID"]

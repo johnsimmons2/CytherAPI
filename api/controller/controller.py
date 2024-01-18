@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple, Union, get_origin, get_args
 from flask import request, make_response
 import json
 import datetime
@@ -37,6 +37,10 @@ def NotFound(result = None) -> Tuple:
     return handle('404 NOT FOUND', result, False)
 
 @staticmethod
+def Forbidden(result = None) -> Tuple:
+    return handle('403 FORBIDDEN', result, False)
+
+@staticmethod
 def Posted(result = None) -> Tuple:
     return handle('201 POSTED', result, True)
 
@@ -66,6 +70,7 @@ def validRequestDataFor(json: dict, model: any) -> bool:
 
         for field in dataclasses.fields(model):
             if _is_mapped_list_type(field.type): continue
+            if _is_optional(field.type): continue
             if field.type is sqlb.Mapped: continue
             if field.name == 'id': continue # Skip the default auto-incrementing id field
             if field.name not in json.keys():
@@ -78,6 +83,12 @@ def validRequestDataFor(json: dict, model: any) -> bool:
     except Exception as exception:
         Logger.error(f"Unknown error in request for model {model.__name__}", exception)
         return False
+
+@staticmethod
+def _is_optional(obj_type):
+    if get_origin(obj_type) is Union and type(None) in get_args(obj_type):
+        return True
+    return False
 
 @staticmethod
 def _is_mapped_list_type(obj_type):
