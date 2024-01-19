@@ -29,8 +29,19 @@ def createRace():
         return BadRequest('No JSON was provided for the race.')
     
     raceJson = request.get_json()
+    feats = []
+
+    if 'feats' in raceJson:
+        feats = _get_feats_from_json(raceJson)
+
+        if type(feats) is str:
+            return BadRequest(feats)
+        del raceJson['feats']
+
     if validRequestDataFor(raceJson, Race):
-        createdId, errors = RaceService.createRace(Race(**raceJson))
+        newRace = Race(**raceJson)
+        newRace.feats = feats
+        createdId, errors = RaceService.createRace(newRace)
         if createdId > 0:
             return Posted({"raceId": createdId})
         else:
@@ -54,22 +65,19 @@ def updateRace(id: str):
         return BadRequest('No JSON was provided for the race.')
     
     raceJson = request.get_json()
-    featsRefs = []
+    feats = []
 
     if 'feats' in raceJson:
-        for feat in raceJson['feats']:
-            foundFeat = FeatService.get(feat['id'])
-            if not foundFeat:
-                foundFeat = FeatService.createFeat(Feat(**feat))
-            featsRefs.append(foundFeat)
+        feats = _get_feats_from_json(raceJson)
 
-    del raceJson['feats']
+        if type(feats) is str:
+            return BadRequest(feats)
+        del raceJson['feats']
 
     if validRequestDataFor(raceJson, Race):
-        from api.service.dbservice import db
         raceWithId = Race(**raceJson)
         raceWithId.id = id
-        createdId, errors = RaceService.update(raceWithId, feats=featsRefs)
+        createdId, errors = RaceService.update(raceWithId, feats)
         if createdId > 0:
             return Posted()
         else:
@@ -86,3 +94,17 @@ def deleteRace(id: str):
         return OK()
     else:
         return NotFound("Could not find a race to delete by that ID")
+    
+def _get_feats_from_json(json):
+    feats = []
+
+    print(json)
+    for feat in json['feats']:
+        if type(feat) is not int:
+            return 'Feat must be supplied as an ID for existing feat.'
+        foundFeat = FeatService.get(str(feat))
+        if not foundFeat:
+            return 'Was not able to get Feat with ID: ' + str(feat)
+        feats.append(foundFeat)
+
+    return feats

@@ -50,7 +50,12 @@ class FeatService:
     
     @classmethod
     def get(cls, id: str) -> Feat:
-        return cls.query.filter_by(id=id).first()
+        return cls.query.filter(Feat.id == id).first()
+    
+    @classmethod
+    def getMultiple(cls, ids: [str]) -> [Feat]:
+        print(ids)
+        return list(map(lambda x: cls.get(x), ids))
     
     @classmethod
     def getByName(cls, name: str) -> Feat:
@@ -174,11 +179,14 @@ class RaceService:
         
         newRace = Race()
         newRace.name = race.name
+        newRace.languages = race.languages
+        newRace.alignment = race.alignment
         newRace.description = race.description
+        newRace.feats = race.feats
 
-        db.session.add(race)
+        db.session.add(newRace)
         db.session.commit()
-        return True
+        return newRace.id, True
     
     @classmethod
     def getRaceFeats(cls, raceName: str) -> [Feat]:
