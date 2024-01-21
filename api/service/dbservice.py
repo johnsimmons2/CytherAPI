@@ -328,8 +328,8 @@ class AuthService:
         nUser.fName = user.fName
         nUser.lName = user.lName
 
-        nUser.created = date.today()
-        nUser.lastOnline = date.today()
+        nUser.created = datetime.now()
+        nUser.lastOnline = datetime.now()
 
         db.session.add(nUser)
         cls.addDefaultRole(nUser)
@@ -430,8 +430,8 @@ class UserService:
         admin.lName = 'Admin'
         admin.salt = str(uuid4())
         admin.password = AuthService._hash_password(os.getenv('ADMIN_PS'), admin.salt)
-        admin.created = date.today()
-        admin.lastOnline = date.today()
+        admin.created = datetime.now()
+        admin.lastOnline = datetime.now()
         admin.roles.append(RoleService.query.filter_by(roleName='Admin').first())
         db.session.add(admin)
       db.session.commit()
@@ -453,14 +453,14 @@ class UserService:
 
     @classmethod
     def getByUsername(cls, username: str):
-        return cls.query.filter_by(username=str.lower(username)).first()
+        return cls.query.filter(User.username.ilike(f"%{username}%")).first()
 
     @classmethod
     def exists(cls, user: User):
         if user.username is not None:
-            return cls.query.filter_by(username=user.username).first() is not None
+            return cls.query.filter(User.username.ilike(f"%{user.username}%")).first() is not None
         elif user.email is not None:
-            return cls.query.filter_by(email=user.email).first() is not None
+            return cls.query.filter(User.email.ilike(f"%{user.email}%")).first() is not None
         else:
             return False
 
@@ -472,7 +472,7 @@ class UserService:
         dbUser.email = user.email if user.email is not None else dbUser.email
         dbUser.fName = user.fName if user.fName is not None else dbUser.fName
         dbUser.lName = user.lName if user.lName is not None else dbUser.lName
-        dbUser.lastOnline = date.today()
+        dbUser.lastOnline = datetime.now()
 
         db.session.commit()
 
