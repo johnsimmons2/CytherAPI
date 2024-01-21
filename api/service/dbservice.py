@@ -307,7 +307,6 @@ class ClassService:
         return cls.querySubclass.filter_by(id=id).first()
 
 class AuthService:
-
     # Adds the current lowest level Role to the user if they have no roles.
     @classmethod
     def addDefaultRole(cls, user):
@@ -369,7 +368,7 @@ class AuthService:
             return None
         
         if AuthService._hash_password(secret, user.salt) == user.password:
-            user.lastOnline = date.today()
+            user.lastOnline = datetime.now()
             cls.addDefaultRole(user)
             db.session.commit()
             return jwth.create_token(user)
