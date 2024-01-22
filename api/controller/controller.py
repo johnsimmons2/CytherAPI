@@ -69,10 +69,11 @@ def validRequestDataFor(json: dict, model: any) -> bool:
         testFlag = True
 
         for field in dataclasses.fields(model):
-            if _is_mapped_list_type(field.type): continue
-            if _is_optional(field.type): continue
-            if field.type is sqlb.Mapped: continue
+            print(field.type)
             if field.name == 'id': continue # Skip the default auto-incrementing id field
+            if _is_optional(field.type): continue
+            if _is_mapped_type(field.type): continue
+            if _is_mapped_list_type(field.type): continue
             if field.name not in json.keys():
                 Logger.error(f"Invalid request data for model {model.__name__}, missing field {field.name}")
                 testFlag = False
@@ -94,6 +95,13 @@ def _is_optional(obj_type):
 def _is_mapped_list_type(obj_type):
     if getattr(obj_type, '__origin__', None) is sqlb.Mapped:
         inner_type = getattr(obj_type, '__args__', [])[0]
+        print(inner_type)
         if inner_type.__origin__ == list:
             return True
+    return False
+
+@staticmethod
+def _is_mapped_type(obj_type):
+    if getattr(obj_type, '__origin__', None) is sqlb.Mapped:
+        return True
     return False

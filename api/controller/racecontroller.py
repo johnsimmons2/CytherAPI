@@ -31,12 +31,12 @@ def createRace():
     raceJson = request.get_json()
     feats = []
 
-    if 'feats' in raceJson:
+    if 'featIds' in raceJson:
         feats = _get_feats_from_json(raceJson)
 
         if type(feats) is str:
             return BadRequest(feats)
-        del raceJson['feats']
+        del raceJson['featIds']
 
     if validRequestDataFor(raceJson, Race):
         newRace = Race(**raceJson)
@@ -67,12 +67,12 @@ def updateRace(id: str):
     raceJson = request.get_json()
     feats = []
 
-    if 'feats' in raceJson:
+    if 'featIds' in raceJson:
         feats = _get_feats_from_json(raceJson)
 
         if type(feats) is str:
             return BadRequest(feats)
-        del raceJson['feats']
+        del raceJson['featIds']
 
     if validRequestDataFor(raceJson, Race):
         raceWithId = Race(**raceJson)
@@ -99,7 +99,7 @@ def _get_feats_from_json(json):
     feats = []
 
     print(json)
-    for feat in json['feats']:
+    for feat in json['featIds']:
         if type(feat) is not int:
             return 'Feat must be supplied as an ID for existing feat.'
         foundFeat = FeatService.get(str(feat))

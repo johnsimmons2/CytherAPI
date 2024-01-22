@@ -67,6 +67,19 @@ def getRacialFeats():
     else:
         return ServerError("The request to get feats returned None instead of an empty list.")
     
+@feats.route("/feats/race/<id>", methods = ['GET'])
+@isAuthorized
+def getRacialFeatsForRace(id: str):
+    feats = FeatService.getRacialFeatsFor(id)
+    if feats is not None:
+        if len(feats) > 0:
+            return OK(feats)
+        else:
+            return NotFound("Race has no feats.")
+    else:
+        return ServerError("The request to get feats returned None instead of an empty list.")
+    
+    
 @feats.route("/feats/<id>", methods = ['DELETE'])
 @isAuthorized
 @isAdmin

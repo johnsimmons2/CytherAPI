@@ -27,7 +27,6 @@ class Race(db.Model):
 class Subclass(db.Model):
     __tablename__ = 'subclass'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
-    classId: int = db.Column(Integer, ForeignKey('class.id'))
     description: str = db.Column(String)
     name: str = db.Column(String)
 

@@ -42,7 +42,11 @@ class FeatService:
 
     @classmethod
     def getRacialFeats(cls) -> [Feat]:
-        return list(map(lambda x: cls.get(x.id), cls.raceFeatQuery.all()))
+        return list(map(lambda x: cls.get(x.featId), cls.raceFeatQuery.all()))
+    
+    @classmethod
+    def getRacialFeatsFor(cls, id: str):
+        return list(map(lambda x: cls.get(x.featId), cls.raceFeatQuery.filter(RaceFeats.raceId == int(id)).all()))
 
     @classmethod
     def getAll(cls) -> [Feat]:
@@ -143,7 +147,7 @@ class RaceService:
 
     @classmethod
     def getByName(cls, name: str) -> Race:
-        return cls.query.filter_by(name=name).first()
+        return cls.query.filter(Race.name.ilike(f"%{name}%")).first() 
     
     @classmethod
     def update(cls, race: Race, feats: List[Feat] | None) -> (int, [str]):
@@ -256,6 +260,11 @@ class CampaignService:
 class ClassService:
     query = Query(Class, db.session)
     querySubclass = Query(Subclass, db.session)
+    queryCSC = Query(ClassSubclasses, db.session)
+
+    @classmethod
+    def getClassSubclasses(cls, id):
+        return cls.query.filter(Class.id == id).first().subclasses
 
     # Initialize by gathering races from API.
     @classmethod
@@ -280,18 +289,59 @@ class ClassService:
             cls._refresh()
 
     @classmethod
+    def delete(cls, classId):
+        foundClass = cls.get(classId)
+
+        if not foundClass:
+            return False
+        try:
+            db.session.delete(foundClass)
+            db.session.commit()
+        except Exception as e:
+            Logger.error(e)
+            return False, [e.__str__()]
+        return True, []
+
+    @classmethod
+    def createClass(cls, clazz: Class):
+        foundClass = cls.getByName(clazz.name)
+        if foundClass is not None:
+            return None, ["A class by this name already exists."]
+        
+        newClass = Class()
+        newClass.description = clazz.description
+        newClass.name = clazz.name
+        db.session.add(newClass)
+        db.session.commit()
+        return newClass, []
+
+    @classmethod
+    def update(cls, id: int, clazz: Class):
+        foundClass = cls.get(id)
+        if foundClass:
+            if clazz.name:
+                foundClass.name = clazz.name
+            if clazz.description:
+                foundClass.description = clazz.description
+            db.session.add(foundClass)
+            db.session.commit()
+            return foundClass, []
+        return None, ["Could not find a class with the given ID"]
+            
+
+    @classmethod
     def _refresh(cls):
         from api.service.dnd5eapiservice import Dnd5eAPIService
-        Dnd5eAPIService.getClasses()
         Logger.debug("Refreshing the class database")
+        Dnd5eAPIService.getClasses()
 
     @classmethod
     def getSubclassByName(cls, subclassName: str):
-        return cls.querySubclass.filter_by(name=subclassName).first()
+        return cls.querySubclass.filter(Subclass.name.ilike(f"%{subclassName}%")).first() 
 
     @classmethod
     def getByName(cls, className: str):
-        return cls.query.filter_by(name=className).first()
+        return cls.query.filter(Class.name.ilike(f"%{className}%")).first() 
 
     @classmethod
     def getAll(cls):
