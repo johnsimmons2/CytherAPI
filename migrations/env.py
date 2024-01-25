@@ -33,6 +33,7 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL is None:
     print('Could not get environment variable for DATABASE_URL. Using default in alembic.ini.')
     DATABASE_URL = config.get_main_option("sqlalchemy.url")
+DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 print(f"Using database url: {DATABASE_URL}")
 
