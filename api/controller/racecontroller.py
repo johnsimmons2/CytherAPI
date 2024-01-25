@@ -98,7 +98,6 @@ def deleteRace(id: str):
 def _get_feats_from_json(json):
     feats = []
 
-    print(json)
     for feat in json['featIds']:
         if type(feat) is not int:
             return 'Feat must be supplied as an ID for existing feat.'

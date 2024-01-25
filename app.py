@@ -48,6 +48,12 @@ if envPort is None:
    envPort = 5000
 
 if dburl is not None:
+
+  Logger.debug("Using database URL: " + str(dburl))
+
+  if dburl.split("://")[0] == "postgres":
+    dburl = dburl.replace("postgres://", "postgresql://", 1)
+
   app.config['SQLALCHEMY_DATABASE_URI'] = dburl
 else:
   cfg = config()
@@ -58,6 +64,7 @@ else:
                   cfg['port'],
                   cfg['database'])
   app.config['SQLALCHEMY_DATABASE_URI'] = uri
+  Logger.debug("Using local database URL: " + str(uri))
 
 db.init_app(app)
 
