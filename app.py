@@ -49,10 +49,9 @@ if envPort is None:
 
 if dburl is not None:
 
+  dburl = dburl.replace("postgres://", "postgresql://", 1)
   Logger.debug("Using database URL: " + str(dburl))
 
-  if dburl.split("://")[0] == "postgres":
-    dburl = dburl.replace("postgres://", "postgresql://", 1)
 
   app.config['SQLALCHEMY_DATABASE_URI'] = dburl
 else:
