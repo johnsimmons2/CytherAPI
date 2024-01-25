@@ -69,7 +69,6 @@ def validRequestDataFor(json: dict, model: any) -> bool:
         testFlag = True
 
         for field in dataclasses.fields(model):
-            print(field.type)
             if field.name == 'id': continue # Skip the default auto-incrementing id field
             if _is_optional(field.type): continue
             if _is_mapped_type(field.type): continue

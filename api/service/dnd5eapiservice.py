@@ -75,8 +75,6 @@ class Dnd5eAPIService:
         classDto.hitdice = responseJson["hit_die"]
         classDto.proficiencies = list(map(lambda x: x["name"], responseJson["proficiencies"]))
 
-        print(responseJson)
-
         for subclass in responseJson["subclasses"]:
             existingSubclass = ClassService.getSubclassByName(subclass["name"])
             if existingSubclass is None:

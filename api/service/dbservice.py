@@ -20,6 +20,64 @@ from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy import desc
 
 
+class StatsheetService:
+    query = db.Query(Statsheet, db.session)
+    stQuery = db.Query(SavingThrow, db.session)
+
+    @classmethod
+    def initSavingThrows(cls):
+        cls.stQuery.filter_by(statName='Strength').first() or db.session.add(SavingThrow(statName='Strength'))
+        cls.stQuery.filter_by(statName='Dexterity').first() or db.session.add(SavingThrow(statName='Dexterity'))
+        cls.stQuery.filter_by(statName='Constitution').first() or db.session.add(SavingThrow(statName='Constitution'))
+        cls.stQuery.filter_by(statName='Intelligence').first() or db.session.add(SavingThrow(statName='Intelligence'))
+        cls.stQuery.filter_by(statName='Wisdom').first() or db.session.add(SavingThrow(statName='Wisdom'))
+        cls.stQuery.filter_by(statName='Charisma').first() or db.session.add(SavingThrow(statName='Charisma'))
+        db.session.commit()
+    
+    @classmethod
+    def getProfiencyBonus(cls, level: int) -> int:
+        if level < 5:
+            return 2
+        elif level < 9:
+            return 3
+        elif level < 13:
+            return 4
+        elif level < 17:
+            return 5
+        elif level < 21:
+            return 6
+        else:
+            return 7
+
+class SkillService:
+    query = db.Query(Skill, db.session)
+
+    @classmethod
+    def initBaseSkills(cls):
+        cls.query.filter_by(name='Athletics').first() or db.session.add(Skill(name='Athletics', description='Strength (Athletics)'))
+        cls.query.filter_by(name='Acrobatics').first() or db.session.add(Skill(name='Acrobatics', description='Dexterity (Acrobatics)'))
+        cls.query.filter_by(name='Sleight of Hand').first() or db.session.add(Skill(name='Sleight of Hand', description='Dexterity (Sleight of Hand)'))
+        cls.query.filter_by(name='Stealth').first() or db.session.add(Skill(name='Stealth', description='Dexterity (Stealth)'))
+        cls.query.filter_by(name='Arcana').first() or db.session.add(Skill(name='Arcana', description='Intelligence (Arcana)'))
+        cls.query.filter_by(name='History').first() or db.session.add(Skill(name='History', description='Intelligence (History)'))
+        cls.query.filter_by(name='Investigation').first() or db.session.add(Skill(name='Investigation', description='Intelligence (Investigation)'))
+        cls.query.filter_by(name='Nature').first() or db.session.add(Skill(name='Nature', description='Intelligence (Nature)'))
+        cls.query.filter_by(name='Religion').first() or db.session.add(Skill(name='Religion', description='Intelligence (Religion)'))
+        cls.query.filter_by(name='Animal Handling').first() or db.session.add(Skill(name='Animal Handling', description='Wisdom (Animal Handling)'))
+        cls.query.filter_by(name='Insight').first() or db.session.add(Skill(name='Insight', description='Wisdom (Insight)'))
+        cls.query.filter_by(name='Medicine').first() or db.session.add(Skill(name='Medicine', description='Wisdom (Medicine)'))
+        cls.query.filter_by(name='Perception').first() or db.session.add(Skill(name='Perception', description='Wisdom (Perception)'))
+        cls.query.filter_by(name='Survival').first() or db.session.add(Skill(name='Survival', description='Wisdom (Survival)'))
+        cls.query.filter_by(name='Deception').first() or db.session.add(Skill(name='Deception', description='Charisma (Deception)'))
+        cls.query.filter_by(name='Intimidation').first() or db.session.add(Skill(name='Intimidation', description='Charisma (Intimidation)'))
+        cls.query.filter_by(name='Performance').first() or db.session.add(Skill(name='Performance', description='Charisma (Performance)'))
+        cls.query.filter_by(name='Persuasion').first() or db.session.add(Skill(name='Persuasion', description='Charisma (Persuasion)'))
+        db.session.commit()
+    
+    @classmethod
+    def getAll(cls):
+        return cls.query.all()
+
 class FeatService:
     query = Query(Feat, db.session)
     raceFeatQuery = Query(RaceFeats, db.session)
@@ -311,6 +369,7 @@ class ClassService:
         newClass = Class()
         newClass.description = clazz.description
         newClass.name = clazz.name
+        newClass.spellCastingAbility = clazz.spellCastingAbility
         db.session.add(newClass)
         db.session.commit()
         return newClass, []
@@ -323,6 +382,9 @@ class ClassService:
                 foundClass.name = clazz.name
             if clazz.description:
                 foundClass.description = clazz.description
+
+            # Spellcasting is nullable, if nothing is sent, it will become nothing.
+            foundClass.spellCastingAbility = clazz.spellCastingAbility
             db.session.add(foundClass)
             db.session.commit()
             return foundClass, []

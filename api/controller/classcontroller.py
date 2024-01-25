@@ -54,6 +54,8 @@ def post():
             return Posted(created)
         else:
             return BadRequest(errors)
+    else:
+        return BadRequest('The JSON provided was not valid for the Class.')
 
 
 @classes.route("/classes/<id>", methods = ['DELETE'])
