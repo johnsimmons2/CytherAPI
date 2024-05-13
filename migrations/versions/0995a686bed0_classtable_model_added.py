@@ -1,7 +1,7 @@
 """ClassTable model added
 
 Revision ID: 0995a686bed0
-Revises: f656e8870684
+Revises: dbb78926edf0
 Create Date: 2024-05-12 18:33:17.312391
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '0995a686bed0'
-down_revision: Union[str, None] = 'f656e8870684'
+down_revision: Union[str, None] = 'dbb78926edf0'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
