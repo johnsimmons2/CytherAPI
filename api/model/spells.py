@@ -1,7 +1,7 @@
 from sqlalchemy import String, Boolean, Integer
 from . import db
 
-
+# TODO: Fix relationship
 class Spells(db.Model):
     __tablename__ = 'spells'
     id = db.Column(Integer, primary_key=True, autoincrement=True)

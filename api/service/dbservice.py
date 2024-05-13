@@ -1,6 +1,7 @@
 import json
 import os
 import hashlib
+from api.model.spells import Spells
 from api.model.campaign import Campaign
 from api.model.classes import *
 from api.model.ext_content import Ext_Content
@@ -33,15 +34,15 @@ class FeatService:
     @classmethod
     def getAll(cls) -> [Feat]:
         return cls.query.all()
-    
+
     @classmethod
     def get(cls, id: str) -> Feat:
         return cls.query.filter_by(id=id).first()
-    
+
     @classmethod
     def getByName(cls, name: str) -> Feat:
         return cls.query.filter_by(name=name).first()
-    
+
     @classmethod
     def update(cls, feat: Feat) -> (Feat | None, [str]):
         foundFeat = cls.get(feat.id)
@@ -52,12 +53,12 @@ class FeatService:
             db.session.commit()
             return foundFeat, []
         return None, ["Could not find a feat with the given ID"]
-    
+
     @classmethod
     def createFeat(cls, feat: Feat) -> (Feat | None, [str]):
         if cls.getByName(feat.name) is not None:
             return None, ["A feat by this name already exists."]
-        
+
         newFeat = Feat()
         newFeat.name = feat.name
         newFeat.description = feat.description
@@ -89,7 +90,7 @@ class RaceService:
         raceRefresh: Ext_Content = Ext_ContentService.getByKey('race_refresh')
         if raceRefresh is None:
             # Trigger actual refresh
-            # Create the 
+            # Create the
             # refresh key with the current time
             Ext_ContentService.add(Ext_Content(**{
                 'key': 'race_refresh',
@@ -114,7 +115,7 @@ class RaceService:
     def getAll(cls) -> [Race]:
         cls.getRacesOnline()
         return cls.query.all()
-    
+
     @classmethod
     def get(cls, id: str) -> Race:
         return cls.query.filter_by(id=id).first()
@@ -122,7 +123,7 @@ class RaceService:
     @classmethod
     def getByName(cls, name: str) -> Race:
         return cls.query.filter_by(name=name).first()
-    
+
     @classmethod
     def update(cls, race: Race, feats: List[Feat] | None) -> (int, [str]):
         foundRace: Race = cls.query.filter(Race.id == race.id).first()
@@ -154,7 +155,7 @@ class RaceService:
     def createRace(cls, race: Race) -> (int, [str]):
         if cls.getByName(race.name) is not None:
             return -1, ["A race by this name already exists."]
-        
+
         newRace = Race()
         newRace.name = race.name
         newRace.description = race.description
@@ -162,7 +163,7 @@ class RaceService:
         db.session.add(race)
         db.session.commit()
         return True
-    
+
     @classmethod
     def getRaceFeats(cls, raceName: str) -> [Feat]:
         race = cls.getByName(raceName)
@@ -186,7 +187,7 @@ class CampaignService:
     @classmethod
     def getActive(cls):
         return cls.query.filter_by(active=True).all()
-    
+
     @classmethod
     def create(cls, campaign: Campaign):
         campaign.active = True
@@ -196,7 +197,7 @@ class CampaignService:
         db.session.add(campaign)
         db.session.commit()
         return campaign
-    
+
     @classmethod
     def updateCampaign(cls, id: str, campaign: Campaign):
         dbCampaign: Campaign = cls.query.filter_by(id=id).first()
@@ -214,11 +215,11 @@ class CampaignService:
         campaign.active = False
         db.session.commit()
         return True
-    
+
     @classmethod
     def getCharactersByCampaignID(cls, id: str):
         return cls.query.filter_by(id=id).first().characters
-    
+
     @classmethod
     def updateCampaignCharacters(cls, id: str, characters: list[Character]):
         campaign: Campaign = cls.query.filter_by(id=id).first()
@@ -231,6 +232,7 @@ class CampaignService:
 class ClassService:
     query = Query(Class, db.session)
     querySubclass = Query(Subclass, db.session)
+    queryClassTable = Query(ClassTable, db.session)
 
     # Initialize by gathering races from API.
     @classmethod
@@ -238,7 +240,7 @@ class ClassService:
         classRefresh: Ext_Content = Ext_ContentService.getByKey('class_refresh')
         if classRefresh is None:
             # Trigger actual refresh
-            # Create the 
+            # Create the
             # refresh key with the current time
             Ext_ContentService.add(Ext_Content(**{
                 'key': 'class_refresh',
@@ -253,6 +255,48 @@ class ClassService:
             if ((datetime.now().timestamp()) - float(classRefresh.content)) >= 60 * 60 * 24:
                 pass
             cls._refresh()
+
+    @classmethod
+    def getSubclasses(cls, classId: str):
+        return cls.querySubclass.filter_by(classId=classId).all()
+
+    @classmethod
+    def getClassTable(cls, classId: str):
+        return cls.queryClassTable.filter_by(classId=classId).first()
+
+    # TODO: Long term project, get this information filled out automatically. For now we pause on the automatic compilation of classes to focus on getting a product out.
+    @classmethod
+    def updateClassTable(cls, classId, classTableJson):
+        classTable = cls.getClassTable(classId)
+        if classTable is None:
+            classTable = ClassTable()
+        if 'profBonus' in classTableJson:
+            classTable.profBonus = classTableJson['profBonus']
+        if 'cantripsKnown' in classTableJson:
+            classTable.cantripsKnown = classTableJson['cantripsKnown']
+        if 'spellsKnown' in classTableJson:
+            classTable.spellsKnown = classTableJson['spellsKnown']
+        if 'level1SpellSlots' in classTableJson:
+            classTable.level1SpellSlots = classTableJson['level1SpellSlots']
+        if 'level2SpellSlots' in classTableJson:
+            classTable.level2SpellSlots = classTableJson['level2SpellSlots']
+        if 'level3SpellSlots' in classTableJson:
+            classTable.level3SpellSlots = classTableJson['level3SpellSlots']
+        if 'level4SpellSlots' in classTableJson:
+            classTable.level4SpellSlots = classTableJson['level4SpellSlots']
+        if 'level5SpellSlots' in classTableJson:
+            classTable.level5SpellSlots = classTableJson['level5SpellSlots']
+        if 'level6SpellSlots' in classTableJson:
+            classTable.level6SpellSlots = classTableJson['level6SpellSlots']
+        if 'level7SpellSlots' in classTableJson:
+            classTable.level7SpellSlots = classTableJson['level7SpellSlots']
+        if 'level8SpellSlots' in classTableJson:
+            classTable.level8SpellSlots = classTableJson['level8SpellSlots']
+        if 'level9SpellSlots' in classTableJson:
+            classTable.level9SpellSlots = classTableJson['level9SpellSlots']
+        db.session.add(classTable)
+        db.session.commit()
+        return (True, None)
 
     @classmethod
     def _refresh(cls):
@@ -298,7 +342,7 @@ class AuthService:
         nUser.salt = salt
         nUser.password = cls._hash_password(user.password, salt)
         nUser.username = user.username
-        
+
         nUser.email = user.email
         nUser.fName = user.fName
         nUser.lName = user.lName
@@ -329,7 +373,7 @@ class AuthService:
     def authenticate_user(cls, inputUser: User) -> User | None:
         query = Query(User, db.session)
         user = None
-        
+
         secret = inputUser.password
         if inputUser.username is not None:
             user = query.filter(User.username.ilike(f"%{inputUser.username}%")).first()
@@ -338,11 +382,11 @@ class AuthService:
         else:
             Logger.error('Attempted to authenticate without email or username provided, or both were provided.')
             return None
-        
+
         if not user:
             Logger.error('no user')
             return None
-        
+
         if AuthService._hash_password(secret, user.salt) == user.password:
             user.lastOnline = date.today()
             cls.addDefaultRole(user)
@@ -451,6 +495,38 @@ class UserService:
 
         db.session.commit()
 
+class SpellService:
+    spellQuery = Query(Spells, db.session)
+
+    @classmethod
+    def getAll(cls):
+        return cls.spellQuery.all()
+
+    @classmethod
+    def get(cls, id: str):
+        return cls.spellQuery.filter_by(id=id).first()
+
+    @classmethod
+    def createSpell(cls, spell: Spells):
+        if cls.spellQuery.filter_by(name=spell.name).first() is not None:
+            return -1, ["A spell by this name already exists."]
+
+        newSpell = Spells()
+        newSpell.castingTime = spell.castingTime
+        newSpell.description = spell.description
+        newSpell.duration = spell.duration
+        newSpell.level = spell.level
+        newSpell.material = spell.material
+        newSpell.name = spell.name
+        newSpell.school = spell.school
+        newSpell.type = spell.type
+        newSpell.verbal = spell.verbal
+        newSpell.somatic = spell.somatic
+        newSpell.ritual = spell.ritual
+
+        db.session.add(newSpell)
+        db.session.commit()
+        return newSpell.id, []
 
 class SpellbookService:
     @classmethod
@@ -584,7 +660,7 @@ class CharacterService:
         db.session.add(statsheet)
         db.session.commit()
         return (character.id, errors)
-    
+
     @classmethod
     def updateCharacter(cls, id: str, characterJson):
         errors = []
@@ -597,7 +673,7 @@ class CharacterService:
         else:
             if 'name' in characterJson:
                 character.name = characterJson['name']
-            
+
             if 'race' in characterJson:
                 character.race = characterJson['race']
 
@@ -619,7 +695,7 @@ class CharacterService:
                         errors.append('Subclass with id ' + str(characterJson['subclassId']) + ' does not exist.')
                     else:
                         statsheet.subclass = subclass
-                
+
                 if 'str' in stats:
                     statsheet.strength = stats['str']
                 if 'cha' in stats:

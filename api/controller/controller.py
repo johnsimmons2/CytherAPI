@@ -29,6 +29,12 @@ def handle(status: str, data: any = None, success: bool = False):
     return response
 
 @staticmethod
+def HandleGet(result: any) -> Tuple:
+    if result is None or result == []:
+        return NotFound()
+    return OK(result)
+
+@staticmethod
 def OK(result = None) -> Tuple:
     return handle('200 OK', result, True)
 

@@ -21,7 +21,7 @@ class Race(db.Model):
     languages: str = db.Column(String)
     alignment: str = db.Column(String)
 
-    feats: Mapped[List[Feat]] = db.relationship('Feat', secondary='race_feats', backref='race')
+    feats: Mapped[List[Feat]] = db.relationship('Feat', secondary='race_feats', backref='race', uselist=True)
 
 @dataclass
 class Subclass(db.Model):
@@ -31,7 +31,31 @@ class Subclass(db.Model):
     description: str = db.Column(String)
     name: str = db.Column(String)
 
-    feats: Mapped[Feat] = db.relationship('Feat', secondary='subclass_feats', backref='subclass')
+    feats: Mapped[List[Feat]] = db.relationship('Feat', secondary='subclass_feats', backref='subclass', uselist=True)
+
+@dataclass
+class ClassTable(db.Model):
+    __tablename__ = 'class_table'
+    id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    classId: int = db.Column(Integer, ForeignKey('class.id'))
+    profBonus: int = db.Column(String)
+    cantripsKnown: int = db.Column(String)
+    spellsKnown: int = db.Column(String)
+
+    # Spell slots are stored as a string of integers separated by commas, example for Cleric below.
+    # First number = level 1, 2nd number = level 2, etc.
+    # Slot 1: (2,3,4)
+    # Slot 2: (-,-,2,3)
+    # Slot 9: (-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,1)
+    level1SpellSlots: int = db.Column(String)
+    level2SpellSlots: int = db.Column(String)
+    level3SpellSlots: int = db.Column(String)
+    level4SpellSlots: int = db.Column(String)
+    level5SpellSlots: int = db.Column(String)
+    level6SpellSlots: int = db.Column(String)
+    level7SpellSlots: int = db.Column(String)
+    level8SpellSlots: int = db.Column(String)
+    level9SpellSlots: int = db.Column(String)
 
 # Eventually this will track hit dice
 @dataclass
@@ -41,8 +65,9 @@ class Class(db.Model):
     name: str = db.Column(String)
     description: str = db.Column(String)
 
+    classTable: Mapped[ClassTable] = db.relationship('ClassTable', backref='class')
     subclasses: Mapped[Subclass] = db.relationship('Subclass', secondary="class_subclasses", backref='class')
-    feats: Mapped[Feat] = db.relationship('Feat', secondary='class_feats', backref='class')
+    feats: Mapped[List[Feat]] = db.relationship('Feat', secondary='class_feats', backref='class', uselist=True)
 
 class SubClassFeats(db.Model):
     __tablename__ = 'subclass_feats'
