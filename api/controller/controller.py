@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple, Union, get_origin, get_args
 from flask import request, make_response
 import json
 import datetime
@@ -43,6 +43,10 @@ def NotFound(result = None) -> Tuple:
     return handle('404 NOT FOUND', result, False)
 
 @staticmethod
+def Forbidden(result = None) -> Tuple:
+    return handle('403 FORBIDDEN', result, False)
+
+@staticmethod
 def Posted(result = None) -> Tuple:
     return handle('201 POSTED', result, True)
 
@@ -71,9 +75,10 @@ def validRequestDataFor(json: dict, model: any) -> bool:
         testFlag = True
 
         for field in dataclasses.fields(model):
-            if _is_mapped_list_type(field.type): continue
-            if field.type is sqlb.Mapped: continue
             if field.name == 'id': continue # Skip the default auto-incrementing id field
+            if _is_optional(field.type): continue
+            if _is_mapped_type(field.type): continue
+            if _is_mapped_list_type(field.type): continue
             if field.name not in json.keys():
                 Logger.error(f"Invalid request data for model {model.__name__}, missing field {field.name}")
                 testFlag = False
@@ -86,9 +91,22 @@ def validRequestDataFor(json: dict, model: any) -> bool:
         return False
 
 @staticmethod
+def _is_optional(obj_type):
+    if get_origin(obj_type) is Union and type(None) in get_args(obj_type):
+        return True
+    return False
+
+@staticmethod
 def _is_mapped_list_type(obj_type):
     if getattr(obj_type, '__origin__', None) is sqlb.Mapped:
         inner_type = getattr(obj_type, '__args__', [])[0]
+        print(inner_type)
         if inner_type.__origin__ == list:
             return True
+    return False
+
+@staticmethod
+def _is_mapped_type(obj_type):
+    if getattr(obj_type, '__origin__', None) is sqlb.Mapped:
+        return True
     return False

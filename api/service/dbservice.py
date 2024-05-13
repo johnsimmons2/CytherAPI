@@ -21,6 +21,64 @@ from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy import desc
 
 
+class StatsheetService:
+    query = db.Query(Statsheet, db.session)
+    stQuery = db.Query(SavingThrow, db.session)
+
+    @classmethod
+    def initSavingThrows(cls):
+        cls.stQuery.filter_by(statName='Strength').first() or db.session.add(SavingThrow(statName='Strength'))
+        cls.stQuery.filter_by(statName='Dexterity').first() or db.session.add(SavingThrow(statName='Dexterity'))
+        cls.stQuery.filter_by(statName='Constitution').first() or db.session.add(SavingThrow(statName='Constitution'))
+        cls.stQuery.filter_by(statName='Intelligence').first() or db.session.add(SavingThrow(statName='Intelligence'))
+        cls.stQuery.filter_by(statName='Wisdom').first() or db.session.add(SavingThrow(statName='Wisdom'))
+        cls.stQuery.filter_by(statName='Charisma').first() or db.session.add(SavingThrow(statName='Charisma'))
+        db.session.commit()
+
+    @classmethod
+    def getProfiencyBonus(cls, level: int) -> int:
+        if level < 5:
+            return 2
+        elif level < 9:
+            return 3
+        elif level < 13:
+            return 4
+        elif level < 17:
+            return 5
+        elif level < 21:
+            return 6
+        else:
+            return 7
+
+class SkillService:
+    query = db.Query(Skill, db.session)
+
+    @classmethod
+    def initBaseSkills(cls):
+        cls.query.filter_by(name='Athletics').first() or db.session.add(Skill(name='Athletics', description='Strength (Athletics)'))
+        cls.query.filter_by(name='Acrobatics').first() or db.session.add(Skill(name='Acrobatics', description='Dexterity (Acrobatics)'))
+        cls.query.filter_by(name='Sleight of Hand').first() or db.session.add(Skill(name='Sleight of Hand', description='Dexterity (Sleight of Hand)'))
+        cls.query.filter_by(name='Stealth').first() or db.session.add(Skill(name='Stealth', description='Dexterity (Stealth)'))
+        cls.query.filter_by(name='Arcana').first() or db.session.add(Skill(name='Arcana', description='Intelligence (Arcana)'))
+        cls.query.filter_by(name='History').first() or db.session.add(Skill(name='History', description='Intelligence (History)'))
+        cls.query.filter_by(name='Investigation').first() or db.session.add(Skill(name='Investigation', description='Intelligence (Investigation)'))
+        cls.query.filter_by(name='Nature').first() or db.session.add(Skill(name='Nature', description='Intelligence (Nature)'))
+        cls.query.filter_by(name='Religion').first() or db.session.add(Skill(name='Religion', description='Intelligence (Religion)'))
+        cls.query.filter_by(name='Animal Handling').first() or db.session.add(Skill(name='Animal Handling', description='Wisdom (Animal Handling)'))
+        cls.query.filter_by(name='Insight').first() or db.session.add(Skill(name='Insight', description='Wisdom (Insight)'))
+        cls.query.filter_by(name='Medicine').first() or db.session.add(Skill(name='Medicine', description='Wisdom (Medicine)'))
+        cls.query.filter_by(name='Perception').first() or db.session.add(Skill(name='Perception', description='Wisdom (Perception)'))
+        cls.query.filter_by(name='Survival').first() or db.session.add(Skill(name='Survival', description='Wisdom (Survival)'))
+        cls.query.filter_by(name='Deception').first() or db.session.add(Skill(name='Deception', description='Charisma (Deception)'))
+        cls.query.filter_by(name='Intimidation').first() or db.session.add(Skill(name='Intimidation', description='Charisma (Intimidation)'))
+        cls.query.filter_by(name='Performance').first() or db.session.add(Skill(name='Performance', description='Charisma (Performance)'))
+        cls.query.filter_by(name='Persuasion').first() or db.session.add(Skill(name='Persuasion', description='Charisma (Persuasion)'))
+        db.session.commit()
+
+    @classmethod
+    def getAll(cls):
+        return cls.query.all()
+
 class FeatService:
     query = Query(Feat, db.session)
     raceFeatQuery = Query(RaceFeats, db.session)
@@ -28,8 +86,26 @@ class FeatService:
     classFeatQuery = Query(ClassFeats, db.session)
 
     @classmethod
+    def delete(cls, id: str):
+        foundFeat = cls.get(id)
+
+        if not foundFeat:
+            return False
+        try:
+            db.session.delete(foundFeat)
+            db.session.commit()
+        except Exception as e:
+            Logger.error(e)
+            return False, [e.__str__()]
+        return True, []
+
+    @classmethod
     def getRacialFeats(cls) -> [Feat]:
-        return list(map(lambda x: cls.get(x.id), cls.raceFeatQuery.all()))
+        return list(map(lambda x: cls.get(x.featId), cls.raceFeatQuery.all()))
+
+    @classmethod
+    def getRacialFeatsFor(cls, id: str):
+        return list(map(lambda x: cls.get(x.featId), cls.raceFeatQuery.filter(RaceFeats.raceId == int(id)).all()))
 
     @classmethod
     def getAll(cls) -> [Feat]:
@@ -37,19 +113,27 @@ class FeatService:
 
     @classmethod
     def get(cls, id: str) -> Feat:
-        return cls.query.filter_by(id=id).first()
+        return cls.query.filter(Feat.id == id).first()
+
+    @classmethod
+    def getMultiple(cls, ids: [str]) -> [Feat]:
+        print(ids)
+        return list(map(lambda x: cls.get(x), ids))
 
     @classmethod
     def getByName(cls, name: str) -> Feat:
         return cls.query.filter_by(name=name).first()
 
     @classmethod
-    def update(cls, feat: Feat) -> (Feat | None, [str]):
-        foundFeat = cls.get(feat.id)
+    def update(cls, id: int, feat: Feat) -> (Feat | None, [str]):
+        foundFeat = cls.get(id)
         if foundFeat is not None:
-            foundFeat.name = feat.name
-            foundFeat.description = feat.description
-            foundFeat.prerequisite = feat.prerequisite
+            if feat.name is not None:
+                foundFeat.name = feat.name
+            if feat.description is not None:
+                foundFeat.description = feat.description
+            if feat.prerequisite is not None:
+                foundFeat.prerequisite = feat.prerequisite
             db.session.commit()
             return foundFeat, []
         return None, ["Could not find a feat with the given ID"]
@@ -122,7 +206,7 @@ class RaceService:
 
     @classmethod
     def getByName(cls, name: str) -> Race:
-        return cls.query.filter_by(name=name).first()
+        return cls.query.filter(Race.name.ilike(f"%{name}%")).first()
 
     @classmethod
     def update(cls, race: Race, feats: List[Feat] | None) -> (int, [str]):
@@ -158,11 +242,14 @@ class RaceService:
 
         newRace = Race()
         newRace.name = race.name
+        newRace.languages = race.languages
+        newRace.alignment = race.alignment
         newRace.description = race.description
+        newRace.feats = race.feats
 
-        db.session.add(race)
+        db.session.add(newRace)
         db.session.commit()
-        return True
+        return newRace.id, True
 
     @classmethod
     def getRaceFeats(cls, raceName: str) -> [Feat]:
@@ -232,7 +319,11 @@ class CampaignService:
 class ClassService:
     query = Query(Class, db.session)
     querySubclass = Query(Subclass, db.session)
-    queryClassTable = Query(ClassTable, db.session)
+    queryCSC = Query(ClassSubclasses, db.session)
+
+    @classmethod
+    def getClassSubclasses(cls, id):
+        return cls.query.filter(Class.id == id).first().subclasses
 
     # Initialize by gathering races from API.
     @classmethod
@@ -297,20 +388,63 @@ class ClassService:
         db.session.add(classTable)
         db.session.commit()
         return (True, None)
+    def delete(cls, classId):
+        foundClass = cls.get(classId)
+
+        if not foundClass:
+            return False
+        try:
+            db.session.delete(foundClass)
+            db.session.commit()
+        except Exception as e:
+            Logger.error(e)
+            return False, [e.__str__()]
+        return True, []
+
+    @classmethod
+    def createClass(cls, clazz: Class):
+        foundClass = cls.getByName(clazz.name)
+        if foundClass is not None:
+            return None, ["A class by this name already exists."]
+
+        newClass = Class()
+        newClass.description = clazz.description
+        newClass.name = clazz.name
+        newClass.spellCastingAbility = clazz.spellCastingAbility
+        db.session.add(newClass)
+        db.session.commit()
+        return newClass, []
+
+    @classmethod
+    def update(cls, id: int, clazz: Class):
+        foundClass = cls.get(id)
+        if foundClass:
+            if clazz.name:
+                foundClass.name = clazz.name
+            if clazz.description:
+                foundClass.description = clazz.description
+
+            # Spellcasting is nullable, if nothing is sent, it will become nothing.
+            foundClass.spellCastingAbility = clazz.spellCastingAbility
+            db.session.add(foundClass)
+            db.session.commit()
+            return foundClass, []
+        return None, ["Could not find a class with the given ID"]
+
 
     @classmethod
     def _refresh(cls):
         from api.service.dnd5eapiservice import Dnd5eAPIService
-        Dnd5eAPIService.getClasses()
         Logger.debug("Refreshing the class database")
+        Dnd5eAPIService.getClasses()
 
     @classmethod
     def getSubclassByName(cls, subclassName: str):
-        return cls.querySubclass.filter_by(name=subclassName).first()
+        return cls.querySubclass.filter(Subclass.name.ilike(f"%{subclassName}%")).first()
 
     @classmethod
     def getByName(cls, className: str):
-        return cls.query.filter_by(name=className).first()
+        return cls.query.filter(Class.name.ilike(f"%{className}%")).first()
 
     @classmethod
     def getAll(cls):
@@ -326,7 +460,6 @@ class ClassService:
         return cls.querySubclass.filter_by(id=id).first()
 
 class AuthService:
-
     # Adds the current lowest level Role to the user if they have no roles.
     @classmethod
     def addDefaultRole(cls, user):
@@ -347,8 +480,8 @@ class AuthService:
         nUser.fName = user.fName
         nUser.lName = user.lName
 
-        nUser.created = date.today()
-        nUser.lastOnline = date.today()
+        nUser.created = datetime.now()
+        nUser.lastOnline = datetime.now()
 
         db.session.add(nUser)
         cls.addDefaultRole(nUser)
@@ -388,7 +521,7 @@ class AuthService:
             return None
 
         if AuthService._hash_password(secret, user.salt) == user.password:
-            user.lastOnline = date.today()
+            user.lastOnline = datetime.now()
             cls.addDefaultRole(user)
             db.session.commit()
             return jwth.create_token(user)
@@ -449,8 +582,8 @@ class UserService:
         admin.lName = 'Admin'
         admin.salt = str(uuid4())
         admin.password = AuthService._hash_password(os.getenv('ADMIN_PS'), admin.salt)
-        admin.created = date.today()
-        admin.lastOnline = date.today()
+        admin.created = datetime.now()
+        admin.lastOnline = datetime.now()
         admin.roles.append(RoleService.query.filter_by(roleName='Admin').first())
         db.session.add(admin)
       db.session.commit()
@@ -472,14 +605,14 @@ class UserService:
 
     @classmethod
     def getByUsername(cls, username: str):
-        return cls.query.filter_by(username=str.lower(username)).first()
+        return cls.query.filter(User.username.ilike(f"%{username}%")).first()
 
     @classmethod
     def exists(cls, user: User):
         if user.username is not None:
-            return cls.query.filter_by(username=user.username).first() is not None
+            return cls.query.filter(User.username.ilike(f"%{user.username}%")).first() is not None
         elif user.email is not None:
-            return cls.query.filter_by(email=user.email).first() is not None
+            return cls.query.filter(User.email.ilike(f"%{user.email}%")).first() is not None
         else:
             return False
 
@@ -491,7 +624,7 @@ class UserService:
         dbUser.email = user.email if user.email is not None else dbUser.email
         dbUser.fName = user.fName if user.fName is not None else dbUser.fName
         dbUser.lName = user.lName if user.lName is not None else dbUser.lName
-        dbUser.lastOnline = date.today()
+        dbUser.lastOnline = datetime.now()
 
         db.session.commit()
 

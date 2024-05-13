@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 from sqlalchemy import ForeignKey, String, Integer
 from sqlalchemy.orm import relationship, Mapped
 from . import db
@@ -10,24 +10,25 @@ class Feat(db.Model):
     id: int  = db.Column(Integer, primary_key=True, autoincrement=True)
     name: str = db.Column(String, unique=True)
     description: str = db.Column(String)
-    prerequisite: str = db.Column(String)
+    prerequisite: Optional[str] = db.Column(String)
 
 @dataclass
 class Race(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    characterId: int = db.Column(Integer, ForeignKey('character.id'))
     name: str = db.Column(String)
     description: str = db.Column(String)
     size: str = db.Column(String)
     languages: str = db.Column(String)
     alignment: str = db.Column(String)
 
-    feats: Mapped[List[Feat]] = db.relationship('Feat', secondary='race_feats', backref='race', uselist=True)
+    character = db.relationship("Character", back_populates="characterRace", cascade="all,delete")
+    feats: Mapped[List[Feat]] = db.relationship('Feat', secondary='race_feats', backref='race')
 
 @dataclass
 class Subclass(db.Model):
     __tablename__ = 'subclass'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
-    classId: int = db.Column(Integer, ForeignKey('class.id'))
     description: str = db.Column(String)
     name: str = db.Column(String)
 
@@ -64,6 +65,7 @@ class Class(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     name: str = db.Column(String)
     description: str = db.Column(String)
+    spellCastingAbility: str = db.Column(String, nullable=True)
 
     classTable: Mapped[ClassTable] = db.relationship('ClassTable', backref='class')
     subclasses: Mapped[Subclass] = db.relationship('Subclass', secondary="class_subclasses", backref='class')

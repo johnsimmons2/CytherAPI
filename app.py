@@ -12,10 +12,11 @@ from api.controller.charactercontroller import characters
 from api.controller.racecontroller import race
 from api.controller.featcontroller import feats
 from api.controller.classcontroller import classes
+from api.controller.skillscontroller import skills
 from api.model import db
 from api.controller.ext_contentcontroller import ext_content
 from api.model.user import User
-from api.service.dbservice import RoleService, UserService
+from api.service.dbservice import RoleService, SkillService, StatsheetService, UserService
 
 load_dotenv()
 # Setup logger
@@ -33,6 +34,7 @@ app.register_blueprint(campaigncontroller.campaigns)
 app.register_blueprint(race)
 app.register_blueprint(feats)
 app.register_blueprint(classes)
+app.register_blueprint(skills)
 
 # Register external content
 app.register_blueprint(ext_content)
@@ -48,6 +50,11 @@ if envPort is None:
    envPort = 5000
 
 if dburl is not None:
+
+  dburl = dburl.replace("postgres://", "postgresql://", 1)
+  Logger.debug("Using database URL: " + str(dburl))
+
+
   app.config['SQLALCHEMY_DATABASE_URI'] = dburl
 else:
   cfg = config()
@@ -58,6 +65,7 @@ else:
                   cfg['port'],
                   cfg['database'])
   app.config['SQLALCHEMY_DATABASE_URI'] = uri
+  Logger.debug("Using local database URL: " + str(uri))
 
 db.init_app(app)
 
@@ -77,6 +85,8 @@ with app.app_context():
     db.session.commit()
     RoleService.initRoles()
     UserService.initUsers()
+    SkillService.initBaseSkills()
+    StatsheetService.initSavingThrows()
 
 if __name__ == "__main__":
     Logger.debug("Starting Cyther-API on port " + str(envPort))
