@@ -13,6 +13,7 @@ from api.controller.racecontroller import race
 from api.controller.featcontroller import feats
 from api.controller.classcontroller import classes
 from api.controller.skillscontroller import skills
+from api.controller.spellcontroller import spells
 from api.model import db
 from api.controller.ext_contentcontroller import ext_content
 from api.model.user import User
@@ -35,6 +36,7 @@ app.register_blueprint(race)
 app.register_blueprint(feats)
 app.register_blueprint(classes)
 app.register_blueprint(skills)
+app.register_blueprint(spells)
 
 # Register external content
 app.register_blueprint(ext_content)
@@ -76,7 +78,10 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    Logger.debug(f"Response: {response.status_code}")
+    if 200 <= response.status_code < 300:
+      Logger.debug(f"Response: {response.status_code}")
+    else:
+      Logger.error(f"Response: {response.status_code}")
     return response
 
 
