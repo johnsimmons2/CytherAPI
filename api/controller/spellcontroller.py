@@ -13,6 +13,11 @@ spells = Blueprint('spells', __name__)
 def get():
   return HandleGet(SpellService.getAll())
 
+@spells.route("/spells/<id>", methods = ['GET'])
+@isAuthorized
+def getById(id: int):
+  return HandleGet(SpellService.get(id))
+
 @spells.route("/spells", methods = ['POST'])
 @isAuthorized
 @isAdmin

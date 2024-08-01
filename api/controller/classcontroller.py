@@ -55,6 +55,18 @@ def getSubs(id: str):
             return NotFound("The class provided did not have any subclasses.")
     else:
         return ServerError("The request to get classes returned None instead of an empty list.")
+    
+@classes.route("/classes/<id>/subclasses", methods = ['POST'])
+@isAuthorized
+def createSubclass(id: str):
+    classes = ClassService.getClassSubclasses(id)
+    if classes is not None:
+        if len(classes) > 0:
+            return OK(classes)
+        else:
+            return NotFound("The class provided did not have any subclasses.")
+    else:
+        return ServerError("The request to get classes returned None instead of an empty list.")
 
 @classes.route("/classes", methods = ['POST'])
 @isAuthorized

@@ -15,14 +15,12 @@ class Feat(db.Model):
 @dataclass
 class Race(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
-    characterId: int = db.Column(Integer, ForeignKey('character.id'))
     name: str = db.Column(String)
     description: str = db.Column(String)
     size: str = db.Column(String)
     languages: str = db.Column(String)
     alignment: str = db.Column(String)
 
-    character = db.relationship("Character", back_populates="characterRace", cascade="all,delete")
     feats: Mapped[List[Feat]] = db.relationship('Feat', secondary='race_feats', backref='race')
 
 @dataclass
@@ -68,7 +66,7 @@ class Class(db.Model):
     spellCastingAbility: str = db.Column(String, nullable=True)
 
     classTable: Mapped[ClassTable] = db.relationship('ClassTable', backref='class')
-    subclasses: Mapped[Subclass] = db.relationship('Subclass', secondary="class_subclasses", backref='class')
+    subclasses: Mapped[List[Subclass]] = db.relationship('Subclass', secondary="class_subclasses", backref='class')
     feats: Mapped[List[Feat]] = db.relationship('Feat', secondary='class_feats', backref='class', uselist=True)
 
 class SubClassFeats(db.Model):

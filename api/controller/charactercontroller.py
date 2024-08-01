@@ -25,9 +25,9 @@ def get():
 def getAllPlayerCharacters():
     return HandleGet(CharacterService.getAllPlayerCharacters())
 
-@characters.route("/characters/player", methods = ['GET'])
-@isAdmin
+@characters.route("/characters/npc", methods = ['GET'])
 @isAuthorized
+@isAdmin
 def getAllNPCs():
     return HandleGet(CharacterService.getAllNPCs())
 
@@ -37,22 +37,22 @@ def getCharacter(id: str):
     return HandleGet(CharacterService.get(id))
 
 @characters.route("/characters", methods = ['POST'])
-@isPlayer
 @isAuthorized
+@isPlayer
 def makeCharacter():
     if request.get_json() is None:
         return BadRequest('No character was provided or the input was invalid.')
 
     characterJson = json.loads(request.data)
     createdId, errors = CharacterService.createCharacter(characterJson)
-    print(createdId, errors)
+
     if createdId:
         return Posted({"characterId": createdId})
     return BadRequest(errors)
 
 @characters.route("/characters/<id>", methods = ['PATCH'])
-@isAdmin
 @isAuthorized
+@isAdmin
 def updateCharacter(id: str):
     if request.get_json() is None:
         return BadRequest('No character was provided or the input was invalid.')

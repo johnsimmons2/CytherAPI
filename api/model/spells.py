@@ -4,6 +4,7 @@ from sqlalchemy.orm import Mapped
 from . import db
 
 
+# TODO: Change itemId to a one to many items relationship.
 @dataclass
 class SpellComponents(db.Model):
     __tablename__ = 'spellcomponents'

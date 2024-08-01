@@ -8,25 +8,26 @@ from api.model.spellbook import Spellbook
 from api.model import classes
 
 
+# TODO: Change race to a relationship
 @dataclass
 class Character(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     statsheetid: int = db.Column(Integer, ForeignKey('statsheet.id'), unique=True)
-    name: str = db.Column(String)
+    raceId: int = db.Column(Integer, ForeignKey('race.id'), unique=True)
+
     # 0: Player
     # 1: NPC
     type: int = db.Column(Integer)
     speed: int = db.Column(Integer)
-    race: str = db.Column(String)
     languages: str = db.Column(String)
+    name: str = db.Column(String)
 
     # If the campaign compatability number matches the campaign ID, the character may be used.
     campaignCompatability: int = db.Column(Integer)
 
-    # This statsheet will change and reflect what is available to the user.
+    race = db.relationship("Race", uselist=False)
     statsheet = db.relationship("Statsheet", uselist=False, foreign_keys=[statsheetid], backref="statsheetid", cascade="all,delete")
     characterDescription = db.relationship("CharacterDescription", uselist=False, backref="character", cascade="all,delete")
-    characterRace = db.relationship("Race", uselist=False, back_populates="character")
 
 @dataclass
 class CharacterDescription(db.Model):
@@ -55,6 +56,7 @@ class Skill(db.Model):
     name: str = db.Column(String)
     description: str = db.Column(String)
 
+# TODO: Make default entries in startup alongside roles, or relate to stats table for future custom stats
 @dataclass
 class Proficiency(db.Model):
     __tablename__ = 'proficiency'
@@ -62,6 +64,7 @@ class Proficiency(db.Model):
     name: str = db.Column(String, unique=True)
     description: str = db.Column(String)
 
+# TODO: Make default entries in startup alongside roles
 @dataclass
 class SavingThrow(db.Model):
     __tablename__ = 'savingthrow'
