@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from api.model.classes import *
 from api.model.ext_content import *

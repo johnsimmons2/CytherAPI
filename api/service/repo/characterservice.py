@@ -212,6 +212,8 @@ class CharacterService:
         if clazz == None:
             raise Exception("Class did not match any ID")
 
+        # TODO Check if subclass and add it
+
         character.race = race
         character.class_ = clazz
 

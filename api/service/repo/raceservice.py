@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from api.loghandler.logger import Logger
 from sqlalchemy.orm import Query

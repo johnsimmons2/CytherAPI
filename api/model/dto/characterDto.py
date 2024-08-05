@@ -25,6 +25,7 @@ class CharacterDescriptionDTO:
 class CharacterDTO:
   name: str
   classId: int
+  subclassId: Optional[int]
   raceId: int
   type: int
   speed: int

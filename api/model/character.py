@@ -15,6 +15,7 @@ class Character(db.Model):
     statsheetid: int = db.Column(Integer, ForeignKey('statsheet.id'), unique=True)
     raceId: int = db.Column(Integer, ForeignKey('race.id'), unique=True)
     classId: int = db.Column(Integer, ForeignKey('class.id'), unique=True)
+    subclassId: int = db.Column(Integer, ForeignKey('subclass.id'), unique=True)
 
     # 0: Player
     # 1: NPC
@@ -28,6 +29,7 @@ class Character(db.Model):
 
     race = db.relationship("Race", uselist=False)
     class_ = db.relationship("Class", uselist=False)
+    subclass_ = db.relationship("Subclass", uselist=False)
     statsheet = db.relationship("Statsheet", uselist=False, foreign_keys=[statsheetid], backref="statsheetid", cascade="all,delete")
     characterDescription = db.relationship("CharacterDescription", uselist=False, backref="character", cascade="all,delete")
 

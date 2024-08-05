@@ -4,14 +4,16 @@ from api.loghandler.logger import Logger
 from api.model import db
 from sqlalchemy.orm import Query
 from api.model.classes import Class, Feat, Race, Subclass
-from api.service.dbservice import RaceService, FeatService, ClassService
+from api.service.dbservice import FeatService
+from api.service.repo.raceservice import RaceService
+from api.service.repo.classservice import ClassService
 import requests
 
 
 @dataclass
 class FeatDTO:
     name: str = ""
-    descriptions: [str] = field(default_factory=list)
+    descriptions: list[str] = field(default_factory=list)
 
 @dataclass
 class RaceDTO:
@@ -20,7 +22,7 @@ class RaceDTO:
     languages: str = ""
     alignment: str = ""
     speed: str = ""
-    traits: [FeatDTO] = field(default_factory=list)
+    traits: list[FeatDTO] = field(default_factory=list)
 
 @dataclass
 class SubclassDTO:
@@ -33,9 +35,9 @@ class Dnd5eClassDTO:
     name: str = ""
     description: str = ""
     hitdice: int = 0
-    proficiencies: [str] = field(default_factory=list)
-    subclasses: [SubclassDTO] = field(default_factory=list)
-    feats: [FeatDTO] = field(default_factory=list)
+    proficiencies: list[str] = field(default_factory=list)
+    subclasses: list[SubclassDTO] = field(default_factory=list)
+    feats: list[FeatDTO] = field(default_factory=list)
 
 
 class Dnd5eAPIService:
@@ -112,7 +114,7 @@ class Dnd5eAPIService:
         return subclassDto
 
     @classmethod
-    def createFeatsForSubclass(cls, nextRequest: str) -> [FeatDTO]:
+    def createFeatsForSubclass(cls, nextRequest: str) -> list[FeatDTO]:
         if nextRequest is None:
             return
         response = requests.get(cls.URL + nextRequest)
