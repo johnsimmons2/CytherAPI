@@ -4,7 +4,8 @@ from api.model.spells import SpellComponents, Spells
 from api.model.spellbook import Spellbook, SpellbookKnowledge
 from api.decorator.auth.authdecorators import isAuthorized, isAdmin
 from api.decorator.validatepostbody import validate_post_body
-from api.service.dbservice import SpellService, SpellbookService
+from api.service.repo.spellservice import SpellService
+from api.service.repo.spellbookservice import SpellbookService
 
 spells = Blueprint('spells', __name__)
 

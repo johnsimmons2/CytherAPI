@@ -3,7 +3,7 @@ from flask import Blueprint, request
 from api.controller.controller import OK, NotFound, ServerError
 
 from api.decorator.auth.authdecorators import isAuthorized
-from api.service.dbservice import SkillService
+from api.service.repo.skillservice import SkillService
 
 
 skills = Blueprint('skills', __name__)

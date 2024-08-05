@@ -14,6 +14,7 @@ class Character(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     statsheetid: int = db.Column(Integer, ForeignKey('statsheet.id'), unique=True)
     raceId: int = db.Column(Integer, ForeignKey('race.id'), unique=True)
+    classId: int = db.Column(Integer, ForeignKey('class.id'), unique=True)
 
     # 0: Player
     # 1: NPC
@@ -26,6 +27,7 @@ class Character(db.Model):
     campaignCompatability: int = db.Column(Integer)
 
     race = db.relationship("Race", uselist=False)
+    class_ = db.relationship("Class", uselist=False)
     statsheet = db.relationship("Statsheet", uselist=False, foreign_keys=[statsheetid], backref="statsheetid", cascade="all,delete")
     characterDescription = db.relationship("CharacterDescription", uselist=False, backref="character", cascade="all,delete")
 
@@ -33,21 +35,21 @@ class Character(db.Model):
 class CharacterDescription(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     characterId: int = db.Column(Integer, ForeignKey('character.id'), unique=True)
-    age: str = db.Column(String)
-    height: str = db.Column(String)
-    weight: str = db.Column(String)
-    eyes: str = db.Column(String)
-    skin: str = db.Column(String)
-    hair: str = db.Column(String)
+    age: str = db.Column(String, nullable=True)
+    height: str = db.Column(String, nullable=True)
+    weight: str = db.Column(String, nullable=True)
+    eyes: str = db.Column(String, nullable=True)
+    skin: str = db.Column(String, nullable=True)
+    hair: str = db.Column(String, nullable=True)
 
-    background: str = db.Column(Text)
-    appearance: str = db.Column(Text)
-    bonds: str = db.Column(Text)
-    ideals: str = db.Column(Text)
-    personality: str = db.Column(Text)
-    flaws: str = db.Column(Text)
-    religion: str = db.Column(Text)
-
+    background: str = db.Column(Text, nullable=True)
+    appearance: str = db.Column(Text, nullable=True)
+    bonds: str = db.Column(Text, nullable=True)
+    ideals: str = db.Column(Text, nullable=True)
+    personality: str = db.Column(Text, nullable=True)
+    flaws: str = db.Column(Text, nullable=True)
+    religion: str = db.Column(Text, nullable=True)
+    backstory: str = db.Column(Text, nullable=True)
 
 @dataclass
 class Skill(db.Model):
@@ -115,7 +117,7 @@ class Statsheet(db.Model):
     savingThrows = db.relationship("SavingThrow", secondary="statsheet_savingthrows", backref="statsheet")
     skills = db.relationship("Skill", secondary="statsheet_skills", backref="statsheet")
     spellbook = db.relationship("Spellbook", uselist=False, back_populates="statsheet", cascade="all,delete")
-    hitdice = db.relationship("Hitdice", back_populates="statsheet", cascade="all,delete")
+    hitdice = db.relationship("Hitdice", uselist=False, back_populates="statsheet", cascade="all,delete")
 
 class Inventory(db.Model):
     id = db.Column(Integer, primary_key=True, autoincrement=True)

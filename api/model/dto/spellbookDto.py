@@ -1,9 +1,9 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class SpellbookDTO:
-    spellSlots: list[int]
-    knownSpellIds: list[int]
-    preparedSpellIds: list[int]
     cantripIds: list[int]
+    knownSpellIds: Optional[list[int]]
+    preparedSpellIds: list[int]

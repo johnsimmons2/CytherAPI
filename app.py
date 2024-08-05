@@ -17,7 +17,9 @@ from api.controller.spellcontroller import spells
 from api.model import db
 from api.controller.ext_contentcontroller import ext_content
 from api.model.user import User
-from api.service.dbservice import RoleService, SkillService, StatsheetService, UserService
+from api.service.dbservice import RoleService, UserService
+from api.service.repo.skillservice import SkillService
+from api.service.repo.statsheetservice import StatsheetService
 
 load_dotenv()
 # Setup logger
@@ -49,7 +51,7 @@ dburl = os.getenv('DATABASE_URL')
 envPort = os.getenv('PORT')
 
 if envPort is None:
-   envPort = 5000
+  envPort = 5000
 
 if dburl is not None:
 
@@ -95,4 +97,7 @@ with app.app_context():
 
 if __name__ == "__main__":
     Logger.debug("Starting Cyther-API on port " + str(envPort))
-    app.run(host='0.0.0.0', port=envPort)
+
+    if os.getenv('ENVIRONMENT') != 'production':
+        Logger.warn("Cyther-API is running on [" + str(os.getenv('ENVIRONMENT')) + "]")
+    app.run(host='0.0.0.0', port=envPort, load_dotenv=True)

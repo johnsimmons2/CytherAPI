@@ -4,7 +4,8 @@ from api.controller.controller import OK, BadRequest, NotFound, ServerError, val
 
 from api.decorator.auth.authdecorators import isAdmin, isAuthorized
 from api.model.classes import Feat, Race
-from api.service.dbservice import FeatService, RaceService
+from api.service.dbservice import FeatService
+from api.service.repo.raceservice import RaceService
 
 
 race = Blueprint('race', __name__)
@@ -27,7 +28,7 @@ def get():
 def createRace():
     if request.get_json() is None:
         return BadRequest('No JSON was provided for the race.')
-    
+
     raceJson = request.get_json()
     feats = []
 
@@ -63,7 +64,7 @@ def getRace(id: str):
 def updateRace(id: str):
     if request.get_json() is None:
         return BadRequest('No JSON was provided for the race.')
-    
+
     raceJson = request.get_json()
     feats = []
 
@@ -94,7 +95,7 @@ def deleteRace(id: str):
         return OK()
     else:
         return NotFound("Could not find a race to delete by that ID")
-    
+
 def _get_feats_from_json(json):
     feats = []
 

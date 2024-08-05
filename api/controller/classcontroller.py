@@ -4,7 +4,7 @@ from api.controller.controller import OK, BadRequest, NotFound, ServerError, val
 
 from api.decorator.auth.authdecorators import isAdmin, isAuthorized
 from api.model.classes import Class, Race
-from api.service.dbservice import ClassService
+from api.service.repo.classservice import ClassService
 
 
 classes = Blueprint('classes', __name__)
@@ -55,7 +55,7 @@ def getSubs(id: str):
             return NotFound("The class provided did not have any subclasses.")
     else:
         return ServerError("The request to get classes returned None instead of an empty list.")
-    
+
 @classes.route("/classes/<id>/subclasses", methods = ['POST'])
 @isAuthorized
 def createSubclass(id: str):

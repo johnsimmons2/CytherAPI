@@ -45,7 +45,7 @@ def verify_token(token: str) -> bool:
             Logger.warn('JWT Token is expired')
             return False
     except Exception as exception:
-        Logger.error('JWT Token validation failed due to exception.', exception)
+        Logger.error(f'JWT Token validation failed due to exception. Token: {token}', exception)
         return False
     return True
 

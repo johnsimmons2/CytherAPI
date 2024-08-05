@@ -37,10 +37,18 @@ class ClassTable(db.Model):
     __tablename__ = 'class_table'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     classId: int = db.Column(Integer, ForeignKey('class.id'))
+
+    # --- DEPRECATE? ---
     profBonus: int = db.Column(String)
+    # --- ---------- ---
+
+    # Spells known and Cantrips known are split by commas, example for Warlock below:
+    # Cantrips Known: 2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4
+    # Spells Known: 2,3,4,5,6,7,8,9,10,10,11,11,12,12,13,13,14,14,15,15
     cantripsKnown: int = db.Column(String)
     spellsKnown: int = db.Column(String)
 
+    hitDice: int = db.Column(Integer) # 4 = d4, 8 = d8, etc.
     # Spell slots are stored as a string of integers separated by commas, example for Cleric below.
     # First number = level 1, 2nd number = level 2, etc.
     # Slot 1: (2,3,4)
@@ -55,6 +63,10 @@ class ClassTable(db.Model):
     level7SpellSlots: int = db.Column(String)
     level8SpellSlots: int = db.Column(String)
     level9SpellSlots: int = db.Column(String)
+
+    # # Comma separated for each level, example: Ki for Monk
+    # # (0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+    # classResource: str = db.Column(String)
 
 # Eventually this will track hit dice
 @dataclass

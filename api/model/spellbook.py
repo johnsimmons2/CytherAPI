@@ -33,9 +33,10 @@ class SpellbookKnowledge(db.Model):
     __tablename__ = 'spellbookknowledge'
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     spellbookId = db.Column(Integer, ForeignKey('spellbook.id'))
-    spellId = db.Column(Integer)
+    spellId = db.Column(Integer, ForeignKey('spells.id'))
 
     spellbook = relationship("Spellbook", back_populates="knowledge")
+    spell = relationship("Spells")
 
     query = db.Query
 
@@ -43,12 +44,14 @@ class SpellbookPrepared(db.Model):
     __tablename__ = 'spellbookprepared'
     id = db.Column(Integer, primary_key=True, autoincrement=True)
     spellbookId = db.Column(Integer, ForeignKey('spellbook.id'))
-    spellId = db.Column(Integer)
+    spellId = db.Column(Integer, ForeignKey('spells.id'))
 
     spellbook = relationship("Spellbook", back_populates="prepared")
+    spell = relationship("Spells")
 
     query = db.Query
 
+# TODO: DEPRECATE? Level 0 spells are already cantrips
 class CantripKnowledge(db.Model):
     __tablename__ = 'cantripknowledge'
     id = db.Column(Integer, primary_key=True, autoincrement=True)
