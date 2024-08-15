@@ -25,7 +25,7 @@ class RaceService:
     # Initialize by gathering races from API.
     @classmethod
     def getRacesOnline(cls):
-        raceRefresh: Ext_Content = Ext_ContentService.getByKey('race_refresh')
+        raceRefresh: Ext_Content | None = Ext_ContentService.getByKey('race_refresh')
         if raceRefresh is None:
             # Trigger actual refresh
             # Create the
@@ -35,7 +35,10 @@ class RaceService:
                 'name': 'Last refresh time for Race table',
                 'content': str(datetime.now().timestamp())
             }))
-            cls._refresh()
+            try:
+                cls._refresh()
+            except:
+                Logger.error("Could not refresh race table.")
         else:
             # Check if the refresh is older than 1 day
             # If it is, trigger refresh
@@ -64,7 +67,7 @@ class RaceService:
 
     @classmethod
     def update(cls, race: Race, feats: List[Feat] | None) -> tuple[int, list[str]]:
-        foundRace: Race = cls.query.filter(Race.id == race.id).first()
+        foundRace: Race | None = cls.query.filter(Race.id == race.id).first()
         success = False
         errors = []
 

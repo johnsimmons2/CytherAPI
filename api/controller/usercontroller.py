@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from api.service.dbservice import UserService, RoleService
 from api.model.user import User, Role
 from api.decorator.auth.authdecorators import isAuthorized, isAdmin
-from api.controller import OK, UnAuthorized, BadRequest, Posted, Conflict
+from api.controller import OK, UnAuthorized, BadRequest, Posted, Conflict, NotFound
 from api.service.jwthelper import create_token
 from api.service.dbservice import AuthService
 from api.loghandler.logger import Logger
@@ -85,6 +85,42 @@ def updateUserRoles(id: str):
 def checkAuth():
     return OK(UserService.getCurrentUserRoles())
 
+@users.route("/auth/email-password-request", methods = ['POST'])
+def passwordResetEmail():
+    if request.get_json() is None:
+        return BadRequest('No user was provided or the input was invalid.')
+    email = json.loads(request.data)['email']
+    Logger.debug(f'A user with email {email} requested a password reset.')
+
+    foundUser = UserService.getByEmail(email)
+    if foundUser is None:
+        return NotFound('No user was found with that email.')
+
+    AuthService.sendPasswordResetEmail(foundUser)
+
+    return OK("Gotcha!")
+
+@users.route("/auth/reset-password", methods = ['POST'])
+def passwordReset():
+    resetToken = request.args.get('resetToken')
+    if resetToken == None:
+        return BadRequest('Query param ?resetToken was not provided.')
+
+    if request.get_json() is None:
+        return BadRequest('No user was provided or the input was invalid.')
+    user = User(**json.loads(request.data))
+    foundUser = UserService.getByUsername(user.username)
+
+    if foundUser is None or foundUser.email == None:
+        return NotFound('No user was found with that email.')
+
+    try:
+        AuthService.resetPassword(foundUser, resetToken, user.password)
+    except:
+        return UnAuthorized("Token was invalid or expired")
+
+    return OK("Gotcha!")
+
 @users.route("/auth/token", methods = ['POST'])
 def authenticate():
     if request.get_json() is None:
@@ -93,10 +129,8 @@ def authenticate():
     user = User(**json.loads(request.data))
     if user.password is None:
         return BadRequest('No password was provided.')
-
     if user.username is None and user.email is None:
         return BadRequest('No username or email was provided.')
-
     authenticated = AuthService.authenticate_user(user)
     if authenticated is not None:
         return OK(dict({"token": str(authenticated)}))

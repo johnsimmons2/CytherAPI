@@ -12,3 +12,4 @@ configparser
 requests
 alembic
 gunicorn
+mailtrap

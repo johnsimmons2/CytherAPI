@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from flask import Flask, request
+from flask.wrappers import Request, Response
 from flask_cors import CORS
 from sqlalchemy.engine import URL
 from api.controller import campaigncontroller
@@ -79,11 +80,11 @@ def before_request():
     Logger.debug(f"Request: {request.method} {request.path}")
 
 @app.after_request
-def after_request(response):
+def after_request(response: Response):
     if 200 <= response.status_code < 300:
       Logger.debug(f"Response: {response.status_code}")
     else:
-      Logger.error(f"Response: {response.status_code}")
+      Logger.error(f"Response: {response.status_code}\t{response.response}")
     return response
 
 

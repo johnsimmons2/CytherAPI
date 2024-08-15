@@ -20,7 +20,7 @@ class ClassService:
     # Initialize by gathering races from API.
     @classmethod
     def getClassesOnline(cls):
-        classRefresh: Ext_Content = Ext_ContentService.getByKey('class_refresh')
+        classRefresh: Ext_Content | None = Ext_ContentService.getByKey('class_refresh')
         if classRefresh is None:
             # Trigger actual refresh
             # Create the
@@ -30,14 +30,16 @@ class ClassService:
                 'name': 'Last refresh time for Class table',
                 'content': str(datetime.now().timestamp())
             }))
-            cls._refresh()
+            try:
+                cls._refresh()
+            except:
+                Logger.error("Could not refresh class table.")
         else:
             # Check if the refresh is older than 1 day
             # If it is, trigger refresh
             # If not, do nothing
             if ((datetime.now().timestamp()) - float(classRefresh.content)) >= 60 * 60 * 24:
                 pass
-            cls._refresh()
 
     @classmethod
     def getSubclasses(cls, classId: int):
@@ -105,6 +107,8 @@ class ClassService:
         db.session.add(classTable)
         db.session.commit()
         return (True, None)
+
+    @classmethod
     def delete(cls, classId):
         foundClass = cls.get(classId)
 

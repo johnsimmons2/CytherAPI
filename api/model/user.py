@@ -37,3 +37,10 @@ class User(db.Model):
 
     characters = db.relationship('Character', secondary='user_characters', backref='user')
     roles = db.relationship('Role', secondary='user_role', backref='user')
+
+@dataclass
+class UserRequest(db.Model):
+  id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+  userId: int = db.Column(Integer, ForeignKey('user.id'))
+  expiry: DateTime = db.Column(DateTime)
+  content: str = db.Column(String)
