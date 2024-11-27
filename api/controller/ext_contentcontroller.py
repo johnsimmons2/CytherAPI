@@ -5,9 +5,14 @@ from api.service.ext_dbservice import Ext_ContentService
 from api.service.jwthelper import create_token
 from api.loghandler.logger import Logger
 import api.service.jwthelper as jwth
+import os
 
 
 ext_content = Blueprint('ext_content', __name__)
+
+@ext_content.route("/health", methods = ['GET'])
+def health():
+    return OK(str(os.getenv('API_VERSION') + ' api.cyther.online'))
 
 @ext_content.route("/ext", methods = ['GET'])
 def getAll():

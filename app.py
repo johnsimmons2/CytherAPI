@@ -28,7 +28,7 @@ Logger.config_set_handler(FormattedLogHandler().set_color_dates(True))
 
 # Create app
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "https://cyther.online"}}, supports_credentials=True)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Register routes
 
@@ -50,6 +50,9 @@ set_config_path(os.path.dirname(os.path.realpath(__file__)))
 
 dburl = os.getenv('DATABASE_URL')
 envPort = os.getenv('PORT')
+apiVersion = os.getenv('API_VERSION')
+
+Logger.debug("API Version: " + str(apiVersion))
 
 if envPort is None:
   envPort = 5000

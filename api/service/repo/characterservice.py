@@ -212,10 +212,15 @@ class CharacterService:
         if clazz == None:
             raise Exception("Class did not match any ID")
 
+        subclazz = ClassService.getSubclass(characterDto.subclassId)
+        if subclazz == None:
+            raise Exception("Subclass did not match any ID")
+
         # TODO Check if subclass and add it
 
         character.race = race
         character.class_ = clazz
+        character.subclass_ = subclazz
 
         Logger.debug("Creating character " + characterDto.name)
         Logger.debug(f"Race: {character.race.name}, Class: {character.class_.name}")
