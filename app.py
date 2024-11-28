@@ -28,21 +28,21 @@ Logger.config_set_handler(FormattedLogHandler().set_color_dates(True))
 
 # Create app
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://cyther.online"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": ["https://cyther.online", "http://127.0.0.1", "http://localhost:8100"]}}, supports_credentials=True)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Register routes
 
-app.register_blueprint(users)
-app.register_blueprint(characters)
-app.register_blueprint(campaigncontroller.campaigns)
-app.register_blueprint(race)
-app.register_blueprint(feats)
-app.register_blueprint(classes)
-app.register_blueprint(skills)
-app.register_blueprint(spells)
+app.register_blueprint(users, url_prefix='/api')
+app.register_blueprint(characters, url_prefix='/api')
+app.register_blueprint(campaigncontroller.campaigns, url_prefix='/api')
+app.register_blueprint(race, url_prefix='/api')
+app.register_blueprint(feats, url_prefix='/api')
+app.register_blueprint(classes, url_prefix='/api')
+app.register_blueprint(skills, url_prefix='/api')
+app.register_blueprint(spells, url_prefix='/api')
 
 # Register external content
-app.register_blueprint(ext_content)
+app.register_blueprint(ext_content, url_prefix='/api')
 
 # Register db
 set_config_path(os.path.dirname(os.path.realpath(__file__)))

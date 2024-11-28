@@ -11,7 +11,6 @@ from api.model.classes import *
 from api.model.ext_content import Ext_Content
 from api.service.ext_dbservice import Ext_ContentService
 import api.service.jwthelper as jwth
-import mailtrap as mt
 from types import SimpleNamespace
 from datetime import date, datetime, timedelta
 from uuid import uuid4
@@ -211,70 +210,71 @@ class AuthService:
 
     @classmethod
     def sendPasswordResetEmail(cls, user: User):
-        secret = config("security")
-        resetToken = ''
-        try:
-            key = base64.b64encode(str(uuid4()).encode('utf-8'))
+        pass
+        # secret = config("security")
+        # resetToken = ''
+        # try:
+        #     key = base64.b64encode(str(uuid4()).encode('utf-8'))
 
-            oldRequests = Query(UserRequest, db.session).filter_by(userId=user.id).all()
-            for req in oldRequests:
-                # Delete old requests so no tokens are dangling
-                db.session.delete(req)
-                db.session.commit()
+        #     oldRequests = Query(UserRequest, db.session).filter_by(userId=user.id).all()
+        #     for req in oldRequests:
+        #         # Delete old requests so no tokens are dangling
+        #         db.session.delete(req)
+        #         db.session.commit()
 
-            request = UserRequest()
-            request.expiry = datetime.now() + timedelta(minutes=15)
-            request.content = key
-            request.userId = user.id
+        #     request = UserRequest()
+        #     request.expiry = datetime.now() + timedelta(minutes=15)
+        #     request.content = key
+        #     request.userId = user.id
 
-            db.session.add(request)
-            db.session.commit()
+        #     db.session.add(request)
+        #     db.session.commit()
 
-            Logger.debug(f"Created a password reset key for {user.username}: {request.content}")
-            Logger.debug(f"Token expires {request.expiry}")
+        #     Logger.debug(f"Created a password reset key for {user.username}: {request.content}")
+        #     Logger.debug(f"Token expires {request.expiry}")
 
-            sha = hashlib.sha256()
-            sha.update(str(request.content).encode('utf-8'))
-            sha.update(str(user.email).encode('utf-8'))
-            sha.update(str(secret["usersecret"]).encode('utf-8'))
-            resetToken = sha.hexdigest()
-            Logger.debug(f"Token: {resetToken}")
-        except Exception as error:
-            Logger.error(error)
-            return
+        #     sha = hashlib.sha256()
+        #     sha.update(str(request.content).encode('utf-8'))
+        #     sha.update(str(user.email).encode('utf-8'))
+        #     sha.update(str(secret["usersecret"]).encode('utf-8'))
+        #     resetToken = sha.hexdigest()
+        #     Logger.debug(f"Token: {resetToken}")
+        # except Exception as error:
+        #     Logger.error(error)
+        #     return
 
-        URL = "http://cyther.online/reset-password?resetToken=" + resetToken + "&user=" + user.username
-        mail = mt.Mail(
-          sender=mt.Address(email="admin@cyther.online", name="Cyther Admin"),
-          to=[mt.Address(email=user.email)],
-          subject="Password Reset Request [cyther.online]",
-          html=f"""
-          <!DOCTYPE html>
-              <html lang="en">
-              <head>
-                  <meta charset="UTF-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>Password Reset</title>
-              </head>
-              <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
-                  <div style="max-width: 600px; margin: 50px auto; background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
-                      <h2 style="color: #333333;">Password Reset Request</h2>
-                      <p>Hello,</p>
-                      <p>We received a request to reset your password. Click the button below to reset your password:</p>
-                      <a href="{URL}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: #ffffff; background-color: #007bff; border-radius: 5px; text-decoration: none; margin-bottom: 20px;">Reset Password</a>
-                      <p>If the button above doesn't work, you can copy and paste the following link into your browser:</p>
-                      <p style="word-wrap: break-word; color: #007bff;">{URL}</p>
-                      <p>If you did not request a password reset, please ignore this email.</p>
-                      <p>Thank you!</p>
-                  </div>
-              </body>
-              </html>
-          """,
-        )
-        mail_token = os.getenv('MAILTRAP_TOKEN')
-        client = mt.MailtrapClient(token=mail_token)
-        result = client.send(mail)
-        Logger.debug(result)
+        # URL = "http://cyther.online/reset-password?resetToken=" + resetToken + "&user=" + user.username
+        # mail = mt.Mail(
+        #   sender=mt.Address(email="admin@cyther.online", name="Cyther Admin"),
+        #   to=[mt.Address(email=user.email)],
+        #   subject="Password Reset Request [cyther.online]",
+        #   html=f"""
+        #   <!DOCTYPE html>
+        #       <html lang="en">
+        #       <head>
+        #           <meta charset="UTF-8">
+        #           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        #           <title>Password Reset</title>
+        #       </head>
+        #       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
+        #           <div style="max-width: 600px; margin: 50px auto; background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
+        #               <h2 style="color: #333333;">Password Reset Request</h2>
+        #               <p>Hello,</p>
+        #               <p>We received a request to reset your password. Click the button below to reset your password:</p>
+        #               <a href="{URL}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: #ffffff; background-color: #007bff; border-radius: 5px; text-decoration: none; margin-bottom: 20px;">Reset Password</a>
+        #               <p>If the button above doesn't work, you can copy and paste the following link into your browser:</p>
+        #               <p style="word-wrap: break-word; color: #007bff;">{URL}</p>
+        #               <p>If you did not request a password reset, please ignore this email.</p>
+        #               <p>Thank you!</p>
+        #           </div>
+        #       </body>
+        #       </html>
+        #   """,
+        # )
+        # mail_token = os.getenv('MAILTRAP_TOKEN')
+        # client = mt.MailtrapClient(token=mail_token)
+        # result = client.send(mail)
+        # Logger.debug(result)
 
     @classmethod
     def register_user(cls, user: User):

@@ -8,25 +8,38 @@ import sqlalchemy.orm as sqldb
 from api.loghandler.logger import Logger
 
 class EnhancedJSONEncoder(json.JSONEncoder):
-  def default(self, o):
-      if dataclasses.is_dataclass(o):
-          return dataclasses.asdict(o)
-      elif isinstance(o, datetime.datetime):
-          return o.isoformat()
-      elif isinstance(o, BaseException):
-          return str(o)
-      return super().default(o)
+    def default(self, o):
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        elif isinstance(o, datetime.datetime):
+            return o.isoformat()
+        elif isinstance(o, BaseException):
+            return str(o)
+        return super().default(o)
 
 @staticmethod
 def handle(status: str, data: any = None, success: bool = False):
     response = make_response()
-    response.headers.add("Access-Control-Allow-Origin", "*")
     if request.method == 'OPTIONS':
         response.headers.add("Access-Control-Allow-Headers", "*")
         response.headers.add("Access-Control-Allow-Methods", "*")
+    print(request.endpoint)
+    if request.method == 'GET' and 'health' in request.endpoint:
+        Logger.warn("Health check endpoint was called")
+        response.headers.add('Access-Control-Expose-Headers', 'X-Client-IP')
+        
+    try:
+        if request.headers.get('X-Forwarded-For'):
+            ip_address = request.headers.get('X-Forwarded-For').split(',')[0]  # First IP is the client IP
+        else:
+            ip_address = request.remote_addr
+    except Exception as e:
+        Logger.error("Error getting client IP", e)
+        ip_address = 'Unknown'
+    response.headers.add("X-Client-IP", ip_address)
     response.status = status
     response.content_type = 'application/json'
-
+    
     response.data = json.dumps({"success": success, "data": data}, cls=EnhancedJSONEncoder)
     return response
 
