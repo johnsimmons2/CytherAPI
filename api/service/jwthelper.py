@@ -1,5 +1,6 @@
 import json
 import datetime
+import os
 import jwt
 from api.service.config import config
 from api.loghandler.logger import Logger
@@ -26,11 +27,12 @@ def create_token(user: User) -> str:
         'email': user.email,
         'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
         'roles': [{'roleName': role.roleName, 'level': role.level} for role in user.roles]
-        }, config('security')['jwtsecret'], "HS256")
+        }, os.getenv('JWT_SECRET'), "HS256")
 
 def decode_token(token: str) -> dict:
     try:
-        result = jwt.decode(token, config('security')['jwtsecret'], "HS256")
+        jwtsecret = os.getenv('JWT_SECRET')
+        result = jwt.decode(token, jwtsecret, "HS256")
         return result
     except Exception as exception:
         Logger.error('JWT Token decoding failed due to exception.', exception)
@@ -38,7 +40,8 @@ def decode_token(token: str) -> dict:
 
 def verify_token(token: str) -> bool:
     try:
-        result = jwt.decode(token, config('security')['jwtsecret'], "HS256")
+        jwtsecret = os.getenv('JWT_SECRET')
+        result = jwt.decode(token, jwtsecret, "HS256")
         expired = datetime.datetime.utcnow() > datetime.datetime.utcfromtimestamp(result['exp'])
         print(result)
         if expired:

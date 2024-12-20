@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from flask import Flask, request
 from flask.wrappers import Request, Response
 from flask_cors import CORS
+from flask_mail import Mail, Message
 from sqlalchemy.engine import URL
 from api.controller import campaigncontroller
 from api.loghandler.logger import Logger
@@ -15,12 +16,14 @@ from api.controller.featcontroller import feats
 from api.controller.classcontroller import classes
 from api.controller.skillscontroller import skills
 from api.controller.spellcontroller import spells
-from api.model import db
+from api.controller.authcontroller import auth
 from api.controller.ext_contentcontroller import ext_content
 from api.model.user import User
 from api.service.dbservice import RoleService, UserService
 from api.service.repo.skillservice import SkillService
 from api.service.repo.statsheetservice import StatsheetService
+from api.model import db
+
 
 load_dotenv()
 # Setup logger
@@ -33,6 +36,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Register routes
 
 app.register_blueprint(users, url_prefix='/api')
+app.register_blueprint(auth, url_prefix='/api')
 app.register_blueprint(characters, url_prefix='/api')
 app.register_blueprint(campaigncontroller.campaigns, url_prefix='/api')
 app.register_blueprint(race, url_prefix='/api')
@@ -40,6 +44,19 @@ app.register_blueprint(feats, url_prefix='/api')
 app.register_blueprint(classes, url_prefix='/api')
 app.register_blueprint(skills, url_prefix='/api')
 app.register_blueprint(spells, url_prefix='/api')
+
+# Register mailtrap client
+app.config['MAIL_SERVER'] = 'live.smtp.mailtrap.io'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = 'api'
+app.config['MAIL_PASSWORD'] = os.getenv('MAILTRAP_TOKEN')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('ADMIN_EMAIL')
+
+Logger.debug("Mailtrap: " + str(os.getenv('ADMIN_EMAIL')) + " " + str(os.getenv('MAILTRAP_TOKEN')))
+
+mail = Mail(app)
 
 # Register external content
 app.register_blueprint(ext_content, url_prefix='/api')

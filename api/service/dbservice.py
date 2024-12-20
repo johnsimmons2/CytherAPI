@@ -23,6 +23,8 @@ from api.loghandler.logger import Logger
 from api.model import db
 from sqlalchemy.orm import Query
 from sqlalchemy import desc
+from flask_mail import Message
+from flask import current_app
 
 
 class FeatService:
@@ -181,7 +183,7 @@ class AuthService:
 
     @classmethod
     def resetPassword(cls, user: User, resetToken: str, newPassword: str):
-        secret = config("security")
+        usersecret = os.getenv("USER_SECRET")
         requests: list[UserRequest] = Query(UserRequest, db.session).filter_by(userId=user.id).all()
         foundValidRequest = False
 
@@ -190,7 +192,7 @@ class AuthService:
                 sha = hashlib.sha256()
                 sha.update(req.content.encode('utf-8'))
                 sha.update(str(user.email).encode('utf-8'))
-                sha.update(str(secret["usersecret"]).encode('utf-8'))
+                sha.update(str(usersecret).encode('utf-8'))
                 compareToken = sha.hexdigest()
                 Logger.debug(f"{compareToken} =?= {resetToken}")
                 Logger.debug(f"{compareToken == resetToken}")
@@ -209,72 +211,78 @@ class AuthService:
 
 
     @classmethod
-    def sendPasswordResetEmail(cls, user: User):
-        pass
-        # secret = config("security")
-        # resetToken = ''
-        # try:
-        #     key = base64.b64encode(str(uuid4()).encode('utf-8'))
+    def sendPasswordResetEmail(cls, user: User) -> bool:
+        usersecret = os.getenv("USER_SECRET")
+        resetToken = ''
+        try:
+            key = base64.b64encode(str(uuid4()).encode('utf-8'))
 
-        #     oldRequests = Query(UserRequest, db.session).filter_by(userId=user.id).all()
-        #     for req in oldRequests:
-        #         # Delete old requests so no tokens are dangling
-        #         db.session.delete(req)
-        #         db.session.commit()
+            oldRequests = Query(UserRequest, db.session).filter_by(userId=user.id).all()
+            for req in oldRequests:
+                # Delete old requests so no tokens are dangling
+                db.session.delete(req)
+                db.session.commit()
 
-        #     request = UserRequest()
-        #     request.expiry = datetime.now() + timedelta(minutes=15)
-        #     request.content = key
-        #     request.userId = user.id
+            request = UserRequest()
+            request.expiry = datetime.now() + timedelta(minutes=15)
+            request.content = key
+            request.userId = user.id
 
-        #     db.session.add(request)
-        #     db.session.commit()
+            db.session.add(request)
+            db.session.commit()
 
-        #     Logger.debug(f"Created a password reset key for {user.username}: {request.content}")
-        #     Logger.debug(f"Token expires {request.expiry}")
+            Logger.debug(f"Created a password reset key for {user.username}: {request.content}")
+            Logger.debug(f"Token expires {request.expiry}")
 
-        #     sha = hashlib.sha256()
-        #     sha.update(str(request.content).encode('utf-8'))
-        #     sha.update(str(user.email).encode('utf-8'))
-        #     sha.update(str(secret["usersecret"]).encode('utf-8'))
-        #     resetToken = sha.hexdigest()
-        #     Logger.debug(f"Token: {resetToken}")
-        # except Exception as error:
-        #     Logger.error(error)
-        #     return
+            sha = hashlib.sha256()
+            sha.update(str(request.content).encode('utf-8'))
+            sha.update(str(user.email).encode('utf-8'))
+            sha.update(str(usersecret).encode('utf-8'))
+            resetToken = sha.hexdigest()
+            Logger.debug(f"Token: {resetToken}")
+        except Exception as error:
+            Logger.error(error)
+            return False
 
-        # URL = "http://cyther.online/reset-password?resetToken=" + resetToken + "&user=" + user.username
-        # mail = mt.Mail(
-        #   sender=mt.Address(email="admin@cyther.online", name="Cyther Admin"),
-        #   to=[mt.Address(email=user.email)],
-        #   subject="Password Reset Request [cyther.online]",
-        #   html=f"""
-        #   <!DOCTYPE html>
-        #       <html lang="en">
-        #       <head>
-        #           <meta charset="UTF-8">
-        #           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        #           <title>Password Reset</title>
-        #       </head>
-        #       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
-        #           <div style="max-width: 600px; margin: 50px auto; background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
-        #               <h2 style="color: #333333;">Password Reset Request</h2>
-        #               <p>Hello,</p>
-        #               <p>We received a request to reset your password. Click the button below to reset your password:</p>
-        #               <a href="{URL}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: #ffffff; background-color: #007bff; border-radius: 5px; text-decoration: none; margin-bottom: 20px;">Reset Password</a>
-        #               <p>If the button above doesn't work, you can copy and paste the following link into your browser:</p>
-        #               <p style="word-wrap: break-word; color: #007bff;">{URL}</p>
-        #               <p>If you did not request a password reset, please ignore this email.</p>
-        #               <p>Thank you!</p>
-        #           </div>
-        #       </body>
-        #       </html>
-        #   """,
-        # )
-        # mail_token = os.getenv('MAILTRAP_TOKEN')
-        # client = mt.MailtrapClient(token=mail_token)
-        # result = client.send(mail)
-        # Logger.debug(result)
+        URL = "http://cyther.online/reset-password?resetToken=" + resetToken + "&user=" + user.username
+        
+        message_receiver = str(user.email)
+        message_subject = "Password Reset Request [cyther.online]"
+        message_body = f"""
+            <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Password Reset</title>
+                </head>
+                <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
+                    <div style="max-width: 600px; margin: 50px auto; background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
+                        <h2 style="color: #333333;">Password Reset Request</h2>
+                        <p>Hello,</p>
+                        <p>We received a request to reset your password. Click the button below to reset your password:</p>
+                        <a href="{URL}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: #ffffff; background-color: #007bff; border-radius: 5px; text-decoration: none; margin-bottom: 20px;">Reset Password</a>
+                        <p>If the button above doesn't work, you can copy and paste the following link into your browser:</p>
+                        <p style="word-wrap: break-word; color: #007bff;">{URL}</p>
+                        <p>If you did not request a password reset, please ignore this email.</p>
+                        <p>Thank you!</p>
+                    </div>
+                </body>
+                </html>
+        """
+        
+        message = Message(subject=message_subject, recipients=[message_receiver], html=message_body, sender=(os.getenv("ADMIN_EMAIL_NAME"), os.getenv("ADMIN_EMAIL")))
+        success = False
+        try:
+            current_app.extensions['mail'].send(message)
+            Logger.debug("Sent password reset email to " + user.email)
+            success = True
+        except Exception as exception:
+            Logger.error("Failed to send password reset email to " + user.email)
+            Logger.error(exception)
+            import traceback as tb
+            Logger.error(tb.format_exc())
+        return success
 
     @classmethod
     def register_user(cls, user: User):
@@ -298,13 +306,13 @@ class AuthService:
 
     @classmethod
     def _hash_password(cls, password: str, salt: str) -> str:
-        secret = config("security")
+        usersecret = os.getenv("USER_SECRET")
         try:
             sha = hashlib.sha256()
             sha.update(password.encode(encoding="UTF-8", errors="strict"))
             sha.update(":".encode(encoding="UTF-8"))
             sha.update(salt.encode(encoding="UTF-8", errors="strict"))
-            sha.update(secret["usersecret"].encode(encoding="UTF-8", errors="strict"))
+            sha.update(usersecret.encode(encoding="UTF-8", errors="strict"))
             return sha.hexdigest()
         except Exception as error:
             Logger.error(error)
@@ -452,7 +460,6 @@ class UserService:
         dbUser.lastOnline = datetime.now()
 
         db.session.commit()
-
 
 class ItemsService:
     @classmethod

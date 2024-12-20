@@ -3,6 +3,7 @@ pylint-flask
 pylint-flask-sqlalchemy
 python-dotenv
 flask
+flask_mail
 flask-cors
 flask-sqlalchemy
 sqlalchemy
@@ -12,4 +13,3 @@ configparser
 requests
 alembic
 gunicorn
-mailtrap
