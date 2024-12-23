@@ -367,6 +367,10 @@ class RoleService:
     @classmethod
     def roleWithLevel(cls, level: int):
         return cls.query.filter_by(level=level).first()
+    
+    @classmethod
+    def getRolesForUser(cls, userId: int):
+        return Query(UserRole, db.session).filter_by(userId=userId).all()
 
     @classmethod
     def initRoles(cls):
@@ -432,6 +436,13 @@ class UserService:
     @classmethod
     def delete(cls, id: str):
         row = cls.query.filter_by(id=id).first()
+        roles = RoleService.getRolesForUser(id)
+        userRequests = Query(UserRequest, db.session).filter_by(userId=id).all()
+        for role in roles:
+            db.session.delete(role)
+            
+        for req in userRequests:
+            db.session.delete(req)
         db.session.delete(row)
         db.session.commit()
         return True
