@@ -182,6 +182,15 @@ class AuthService:
             db.session.commit()
 
     @classmethod
+    def adminResetPassword(cls, id: int, newPrd: str):
+        user: User = Query(User, db.session).filter_by(id=id).first()
+        if user is None:
+            return False
+        user.password = AuthService._hash_password(newPrd, user.salt)
+        db.session.commit()
+        return True
+
+    @classmethod
     def resetPasswordManual(cls, id: int, oldPwd: str, newPrd: str):
         user: User = Query(User, db.session).filter_by(id=id).first()
         if user is None:

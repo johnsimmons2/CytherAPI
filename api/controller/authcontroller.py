@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 from api.controller import OK, BadRequest, Posted
 from api.controller.controller import Conflict, NotFound, UnAuthorized
-from api.decorator.auth.authdecorators import isAuthorized
+from api.decorator.auth.authdecorators import isAuthorized, isAdmin
 from api.loghandler.logger import Logger
 from api.model.user import User
 from api.service.dbservice import AuthService, UserService
@@ -59,6 +59,7 @@ def passwordResetManual():
 
     return OK("Gotcha!")
 
+@isAdmin
 @auth.route("/auth/reset-password", methods = ['POST'])
 def passwordReset():
     resetToken = request.args.get('resetToken')
@@ -78,7 +79,24 @@ def passwordReset():
     except:
         return UnAuthorized("Token was invalid or expired")
 
-    return OK("Gotcha!")
+    return OK("Password reset succeeded")
+
+@auth.route("/auth/force-password-reset", methods = ['POST'])
+def adminPasswordReset():
+    if request.get_json() is None:
+        return BadRequest('No user was provided or the input was invalid.')
+    user = User(**json.loads(request.data))
+    foundUser = UserService.getByUsername(user.username)
+
+    if foundUser is None or foundUser.email == None:
+        return NotFound('No user was found with that email.')
+
+    try:
+        AuthService.adminResetPassword(foundUser, user.password)
+    except:
+        return BadRequest("Something went wrong!")
+
+    return OK("Admin has forced the password to reset")
 
 @auth.route("/auth/token", methods = ['POST'])
 def authenticate():
