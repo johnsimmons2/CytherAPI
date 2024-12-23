@@ -5,7 +5,7 @@ from api.decorator.auth.authdecorators import isAuthorized
 from api.loghandler.logger import Logger
 from api.model.user import User
 from api.service.dbservice import AuthService, UserService
-from api.service.jwthelper import create_token as jwth
+import api.service.jwthelper as jwth
 import json
 import os
 
@@ -39,6 +39,25 @@ def passwordResetEmail():
     if not success:
         return BadRequest('Email could not be sent.')
     return OK("Password reset email sent.")
+
+@auth.route("/auth/reset-password/manual-request", methods = ['POST'])
+def passwordResetManual():
+    if request.get_json() is None:
+        return BadRequest('No user was provided or the input was invalid.')
+    data = request.get_json()
+    old = data.get('old_secret')
+    new = data.get('new_secret')
+    userId = data.get('id')
+    
+    if old is None or new is None or userId is None:
+        return NotFound('Request supplied was invalid.')
+
+    try:
+        AuthService.resetPasswordManual(userId, old, new)
+    except:
+        return UnAuthorized("Token was invalid or expired")
+
+    return OK("Gotcha!")
 
 @auth.route("/auth/reset-password", methods = ['POST'])
 def passwordReset():

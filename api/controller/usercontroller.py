@@ -20,11 +20,20 @@ def get():
 
 @users.route("/users/<id>", methods = ['GET'])
 def getUser(id: str):
-    user = UserService.get(id)
-    if user:
-        return OK(user)
+    if id is None or id == '':
+        return BadRequest('No user ID was provided.')
+    if id.isdigit():
+        user = UserService.get(id)
+        if user:
+            return OK(user)
+        else:
+            return NotFound('No user was found with that ID.')
     else:
-        return BadRequest('No user was found with that ID.')
+        user = UserService.getByUsername(id)
+        if user:
+            return OK(user)
+        else:
+            return NotFound('No user was found with that username.')
 
 @users.route("/users/<id>", methods = ['DELETE'])
 @isAdmin

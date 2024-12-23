@@ -182,6 +182,18 @@ class AuthService:
             db.session.commit()
 
     @classmethod
+    def resetPasswordManual(cls, id: int, oldPwd: str, newPrd: str):
+        user: User = Query(User, db.session).filter_by(id=id).first()
+        if user is None:
+            return False
+        if AuthService._hash_password(oldPwd, user.salt) == user.password:
+            user.password = AuthService._hash_password(newPrd, user.salt)
+            db.session.commit()
+            return True
+        else:
+            return False
+
+    @classmethod
     def resetPassword(cls, user: User, resetToken: str, newPassword: str):
         usersecret = os.getenv("USER_SECRET")
         requests: list[UserRequest] = Query(UserRequest, db.session).filter_by(userId=user.id).all()
@@ -268,7 +280,7 @@ class AuthService:
                         <p>Thank you!</p>
                     </div>
                 </body>
-                </html>
+            </html>
         """
         
         message = Message(subject=message_subject, recipients=[message_receiver], html=message_body, sender=(os.getenv("ADMIN_EMAIL_NAME"), os.getenv("ADMIN_EMAIL")))
