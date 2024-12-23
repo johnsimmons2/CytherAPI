@@ -232,6 +232,43 @@ class AuthService:
 
 
     @classmethod
+    def createResetLink(cls, user: User) -> str | None:
+        usersecret = os.getenv("USER_SECRET")
+        resetToken = ''
+        try:
+            key = base64.b64encode(str(uuid4()).encode('utf-8'))
+
+            oldRequests = Query(UserRequest, db.session).filter_by(userId=user.id).all()
+            for req in oldRequests:
+                # Delete old requests so no tokens are dangling
+                db.session.delete(req)
+                db.session.commit()
+
+            request = UserRequest()
+            request.expiry = datetime.now() + timedelta(minutes=15)
+            request.content = key
+            request.userId = user.id
+
+            db.session.add(request)
+            db.session.commit()
+
+            Logger.debug(f"Created a password reset key for {user.username}: {request.content}")
+            Logger.debug(f"Token expires {request.expiry}")
+
+            sha = hashlib.sha256()
+            sha.update(str(request.content).encode('utf-8'))
+            sha.update(str(user.email).encode('utf-8'))
+            sha.update(str(usersecret).encode('utf-8'))
+            resetToken = sha.hexdigest()
+            Logger.debug(f"Token: {resetToken}")
+        except Exception as error:
+            Logger.error(error)
+            return None
+
+        URL = "http://cyther.online/reset-password?resetToken=" + resetToken + "&user=" + user.username
+        return URL
+
+    @classmethod
     def sendPasswordResetEmail(cls, user: User) -> bool:
         usersecret = os.getenv("USER_SECRET")
         resetToken = ''

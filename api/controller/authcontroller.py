@@ -59,7 +59,6 @@ def passwordResetManual():
 
     return OK("Gotcha!")
 
-@isAdmin
 @auth.route("/auth/reset-password", methods = ['POST'])
 def passwordReset():
     resetToken = request.args.get('resetToken')
@@ -81,6 +80,7 @@ def passwordReset():
 
     return OK("Password reset succeeded")
 
+@isAdmin
 @auth.route("/auth/force-password-reset", methods = ['POST'])
 def adminPasswordReset():
     if request.get_json() is None:
@@ -97,6 +97,25 @@ def adminPasswordReset():
         return BadRequest("Something went wrong!")
 
     return OK("Admin has forced the password to reset")
+
+@isAdmin
+@auth.route("/auth/get-password-reset-link", methods = ['POST'])
+def adminPasswordResetLink():
+    if request.get_json() is None:
+        return BadRequest('No user was provided or the input was invalid.')
+    user = User(**json.loads(request.data))
+    foundUser = UserService.getByUsername(user.username)
+
+    if foundUser is None:
+        return NotFound('No user was found.')
+
+    link = ''
+    try:
+        link = AuthService.createResetLink(foundUser)
+    except:
+        return BadRequest("Something went wrong!")
+    return OK(link)
+
 
 @auth.route("/auth/token", methods = ['POST'])
 def authenticate():
