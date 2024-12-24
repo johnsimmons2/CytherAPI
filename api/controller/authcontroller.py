@@ -61,9 +61,9 @@ def passwordResetManual():
 
 @auth.route("/auth/reset-password", methods = ['POST'])
 def passwordReset():
-    resetToken = request.args.get('resetToken')
+    resetToken = request.args.get('t')
     if resetToken == None:
-        return BadRequest('Query param ?resetToken was not provided.')
+        return BadRequest('Query param ?t (reset token) was not provided.')
 
     if request.get_json() is None:
         return BadRequest('No user was provided or the input was invalid.')
@@ -75,7 +75,8 @@ def passwordReset():
 
     try:
         AuthService.resetPassword(foundUser, resetToken, user.password)
-    except:
+    except Exception as e:
+        Logger.error(e)
         return UnAuthorized("Token was invalid or expired")
 
     return OK("Password reset succeeded")
@@ -145,6 +146,7 @@ def post():
     if user.username is None and user.email is None:
         return BadRequest('No username or email was provided.')
 
+    Logger.debug(f"{user.username} {user.email} {UserService.exists(user)}")
     if UserService.exists(user):
         return Conflict('User already exists with that email or username.')
 

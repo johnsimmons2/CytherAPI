@@ -207,10 +207,16 @@ class AuthService:
         usersecret = os.getenv("USER_SECRET")
         requests: list[UserRequest] = Query(UserRequest, db.session).filter_by(userId=user.id).all()
         foundValidRequest = False
+        foundRequest = None
+
+        if requests is None or requests == []:
+            Logger.error("No requests found")
+            raise Exception("The URL provided was invalid or expired.")
 
         for req in requests:
             if req.expiry >= datetime.now():
                 sha = hashlib.sha256()
+                Logger.debug(f"{req.content} {user.email} {usersecret}")
                 sha.update(req.content.encode('utf-8'))
                 sha.update(str(user.email).encode('utf-8'))
                 sha.update(str(usersecret).encode('utf-8'))
@@ -220,7 +226,9 @@ class AuthService:
                 if compareToken == resetToken:
                     Logger.debug(f"Validated the resetToken")
                     foundValidRequest = True
-                    db.session.delete(req)
+                    foundRequest = req
+            else:
+                Logger.debug(f"Request expired: {req.expiry}")
 
         if not foundValidRequest:
             raise Exception("The URL provided was invalid or expired.")
@@ -228,6 +236,7 @@ class AuthService:
         salt = str(uuid4())
         user.salt = salt
         user.password = cls._hash_password(newPassword, salt)
+        db.session.delete(foundRequest)
         db.session.commit()
 
 
@@ -265,7 +274,7 @@ class AuthService:
             Logger.error(error)
             return None
 
-        URL = "http://cyther.online/reset-password?resetToken=" + resetToken + "&user=" + user.username
+        URL = "https://cyther.online/reset-password?t=" + resetToken + "&u=" + user.username
         return URL
 
     @classmethod
@@ -302,10 +311,10 @@ class AuthService:
             Logger.error(error)
             return False
 
-        URL = "http://cyther.online/reset-password?resetToken=" + resetToken + "&user=" + user.username
+        URL = "https://cyther.online/reset-password?t=" + resetToken + "&u=" + user.username
         
         message_receiver = str(user.email)
-        message_subject = "Password Reset Request [cyther.online]"
+        message_subject = f"[CYTHER.ONLINE] Password Reset Request for {user.username}."
         message_body = f"""
             <!DOCTYPE html>
                 <html lang="en">
@@ -503,18 +512,18 @@ class UserService:
 
     @classmethod
     def exists(cls, user: User):
-        if user.username is not None:
-            return (
-                cls.query.filter(User.username.ilike(f"%{user.username}%")).first()
-                is not None
-            )
-        elif user.email is not None:
-            return (
+        exist = False
+        if user.email is not None:
+            exist = (
                 cls.query.filter(User.email.ilike(f"%{user.email}%")).first()
                 is not None
             )
-        else:
-            return False
+        if user.username is not None and not exist:
+            exist = (
+                cls.query.filter(User.username.ilike(f"%{user.username}%")).first()
+                is not None
+            )
+        return exist
 
     @classmethod
     def updateUser(cls, id: str, user: User):
