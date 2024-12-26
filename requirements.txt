@@ -14,4 +14,4 @@ configparser
 requests
 alembic
 gunicorn
-reventlet
+eventlet
