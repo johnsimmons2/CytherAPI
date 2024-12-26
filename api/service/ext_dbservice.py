@@ -1,7 +1,7 @@
 import json
-from api.model import db
 from api.model.ext_content import Ext_Content
 from sqlalchemy.orm import Query
+from extensions import db
 
 
 class Ext_ContentService:

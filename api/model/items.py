@@ -1,5 +1,5 @@
 from sqlalchemy import String, Float, Boolean, DateTime, Integer
-from . import db
+from extensions import db
 
 
 class Items(db.Model):

@@ -4,6 +4,7 @@ from flask import Flask, request
 from flask.wrappers import Request, Response
 from flask_cors import CORS
 from flask_mail import Mail, Message
+from flask_socketio import SocketIO
 from sqlalchemy.engine import URL
 from api.controller import campaigncontroller
 from api.loghandler.logger import Logger
@@ -17,21 +18,23 @@ from api.controller.classcontroller import classes
 from api.controller.skillscontroller import skills
 from api.controller.spellcontroller import spells
 from api.controller.authcontroller import auth
+from api.controller.socketcontroller import wsocket
 from api.controller.ext_contentcontroller import ext_content
 from api.model.user import User
 from api.service.dbservice import RoleService, UserService
 from api.service.repo.skillservice import SkillService
 from api.service.repo.statsheetservice import StatsheetService
-from api.model import db
+from extensions import db, cors, socketio, mail
+
+import eventlet
 
 
+# app.py
 load_dotenv()
 # Setup logger
-Logger.config_set_handler(FormattedLogHandler().set_color_dates(True))
 
 # Create app
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["https://cyther.online", "http://127.0.0.1", "http://localhost:8100"]}}, supports_credentials=True)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Register routes
 
@@ -44,6 +47,10 @@ app.register_blueprint(feats, url_prefix='/api')
 app.register_blueprint(classes, url_prefix='/api')
 app.register_blueprint(skills, url_prefix='/api')
 app.register_blueprint(spells, url_prefix='/api')
+app.register_blueprint(wsocket, url_prefix='/api')
+
+# Register external content
+app.register_blueprint(ext_content, url_prefix='/api')
 
 # Register mailtrap client
 app.config['MAIL_SERVER'] = 'live.smtp.mailtrap.io'
@@ -54,16 +61,7 @@ app.config['MAIL_USERNAME'] = 'api'
 app.config['MAIL_PASSWORD'] = os.getenv('MAILTRAP_TOKEN')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('ADMIN_EMAIL')
 
-Logger.debug("Mailtrap: " + str(os.getenv('ADMIN_EMAIL')) + " " + str(os.getenv('MAILTRAP_TOKEN')))
-
-mail = Mail(app)
-
-# Register external content
-app.register_blueprint(ext_content, url_prefix='/api')
-
-# Register db
 set_config_path(os.path.dirname(os.path.realpath(__file__)))
-
 
 dburl = os.getenv('DATABASE_URL')
 envPort = os.getenv('PORT')
@@ -91,8 +89,16 @@ else:
                   cfg['database'])
   app.config['SQLALCHEMY_DATABASE_URI'] = uri
   Logger.debug("Using local database URL: " + str(uri))
-
+  
+mail.init_app(app)
+Logger.debug("Mailtrap: " + str(os.getenv('ADMIN_EMAIL')) + " " + str(os.getenv('MAILTRAP_TOKEN')))
+socketio.init_app(app)
+Logger.debug("SocketIO configured")
+cors.init_app(app)
+Logger.debug("CORS Configured")
 db.init_app(app)
+Logger.debug("Database configured")
+
 
 # Logging middleware
 @app.before_request
@@ -121,4 +127,4 @@ if __name__ == "__main__":
 
     if os.getenv('ENVIRONMENT') != 'production':
         Logger.warn("Cyther-API is running on [" + str(os.getenv('ENVIRONMENT')) + "]")
-    app.run(host='0.0.0.0', port=envPort, load_dotenv=True)
+    socketio.run(app, host='0.0.0.0', port=envPort)

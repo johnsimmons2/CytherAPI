@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from sqlalchemy import ForeignKey, Integer, String, DateTime, Boolean
 from sqlalchemy.orm import relationship
-from . import db
+from extensions import db
 
 
 @dataclass

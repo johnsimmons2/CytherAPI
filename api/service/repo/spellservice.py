@@ -1,7 +1,7 @@
 from api.model.spells import *
 from api.loghandler.logger import Logger
-from api.model import db
 from sqlalchemy.orm import Query
+from extensions import db
 
 
 class SpellService:

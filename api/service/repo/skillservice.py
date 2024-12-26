@@ -1,4 +1,4 @@
-from api.model import db
+from extensions import db
 from sqlalchemy.orm import Query
 from api.model.character import Skill
 

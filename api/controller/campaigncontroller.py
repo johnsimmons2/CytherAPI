@@ -4,7 +4,6 @@ from api.controller.controller import OK, BadRequest, Posted
 
 from api.decorator.auth.authdecorators import isAdmin, isAuthorized
 from api.model.campaign import Campaign
-from api.model.character import Character
 from api.service.repo.characterservice import CharacterService
 from api.service.dbservice import CampaignService
 

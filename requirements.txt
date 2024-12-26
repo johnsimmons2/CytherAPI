@@ -6,6 +6,7 @@ flask
 flask_mail
 flask-cors
 flask-sqlalchemy
+flask-socketio
 sqlalchemy
 psycopg2
 pyjwt
@@ -13,3 +14,4 @@ configparser
 requests
 alembic
 gunicorn
+reventlet

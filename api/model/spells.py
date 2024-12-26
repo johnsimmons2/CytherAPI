@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from sqlalchemy import String, Boolean, Integer, ForeignKey
 from sqlalchemy.orm import Mapped
-from . import db
+from extensions import db
 
 
 # TODO: Change itemId to a one to many items relationship.

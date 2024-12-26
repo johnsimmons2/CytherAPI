@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 from sqlalchemy import ForeignKey, String, Integer
 from sqlalchemy.orm import relationship, Mapped
-from . import db
+from extensions import db
 
 
 @dataclass

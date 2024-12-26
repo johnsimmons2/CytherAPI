@@ -60,11 +60,16 @@ def get_access_token():
     elif request.data and request.data['Authorization']:
         data = json.loads(data)
         data = request.data['Authorization']
+    elif request.args and 'token' in request.args.keys():
+        data = request.args['token']
     else:
         Logger.error('Authorization was not supplied.')
         return None
     try:
-        return data.split(' ')[1]
+        # Check if data is already a token
+        if 'Bearer' in data:
+            return data.split(' ')[1]
+        return data
     except Exception:
         Logger.error('Token was not supplied in "Bearer TOKEN" format.')
     return None

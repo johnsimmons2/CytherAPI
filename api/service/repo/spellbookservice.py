@@ -3,8 +3,8 @@ from api.model.classes import ClassTable
 from api.model.dto.characterDto import CharacterDTO
 from api.model.spellbook import *
 from api.model.spells import *
-from api.model import db
 from sqlalchemy.orm import Query
+from extensions import db
 
 from api.service.repo.spellservice import SpellService
 from api.service.repo.classservice import ClassService

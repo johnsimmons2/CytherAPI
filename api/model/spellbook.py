@@ -1,6 +1,6 @@
 from sqlalchemy import Integer, ForeignKey
 from sqlalchemy.orm import relationship
-from . import db
+from extensions import db
 
 
 class Spellbook(db.Model):

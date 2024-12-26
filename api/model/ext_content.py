@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from . import db
+from extensions import db
 from sqlalchemy import Integer, String, Text
 
 

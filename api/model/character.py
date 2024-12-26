@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Text
-from . import db
+from extensions import db
 from api.model.dice import Hitdice
 from api.model.spellbook import Spellbook
 from api.model import classes

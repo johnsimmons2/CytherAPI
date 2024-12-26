@@ -5,8 +5,8 @@ from sqlalchemy import pool
 
 import os
 from alembic import context
-from api.model import db
 from api.model import character, classes, dice, items, spellbook, spells, user, ext_content, campaign
+from extensions import db
 
 
 # this is the Alembic Config object, which provides
