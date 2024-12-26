@@ -33,7 +33,6 @@ def getClassTable(id):
 
 
 @classes.route("/classes/<id>/table", methods = ['PATCH'])
-@isAdmin
 @isAuthorized
 def updateClassTable(id):
     if request.get_json() is None:
@@ -69,7 +68,6 @@ def createSubclass(id: str):
         return ServerError("The request to get classes returned None instead of an empty list.")
 
 @classes.route("/classes", methods = ['POST'])
-@isAuthorized
 @isAdmin
 def post():
     if request.get_json() is None:
@@ -94,7 +92,6 @@ def post():
 
 
 @classes.route("/classes/<id>", methods = ['DELETE'])
-@isAuthorized
 @isAdmin
 def delete(id: str):
     deleted, errors = ClassService.delete(id)
@@ -103,8 +100,19 @@ def delete(id: str):
     else:
         return BadRequest(errors)
 
-@classes.route("/classes/<id>", methods = ['PATCH'])
+@classes.route("/subclasses", methods = ['GET'])
 @isAuthorized
+def getSubclasses():
+    subclasses = ClassService.getAllSubclasses()
+    if subclasses is not None:
+        if len(subclasses) > 0:
+            return OK(subclasses)
+        else:
+            return NotFound("No subclasses could be found in the database.")
+    else:
+        return ServerError("The request to get subclasses returned None instead of an empty list.")
+
+@classes.route("/classes/<id>", methods = ['PATCH'])
 @isAdmin
 def patch(id: str):
     if request.get_json() is None:

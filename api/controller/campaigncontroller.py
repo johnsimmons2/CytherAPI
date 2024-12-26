@@ -4,8 +4,9 @@ from api.controller.controller import OK, BadRequest, Posted
 
 from api.decorator.auth.authdecorators import isAdmin, isAuthorized
 from api.model.campaign import Campaign
+from api.service.dbservice import UserService
 from api.service.repo.characterservice import CharacterService
-from api.service.dbservice import CampaignService
+from api.service.repo.campaignservice import CampaignService
 
 
 campaigns = Blueprint('campaigns', __name__)
@@ -31,7 +32,6 @@ def getCampaign(id: str):
     return OK(result)
 
 @campaigns.route("/campaigns", methods = ['POST'])
-@isAuthorized
 @isAdmin
 def createCampaign():
     if request.get_json() is None:
@@ -52,7 +52,6 @@ def getCampaignCharacters(id: str):
     return OK(result)
 
 @campaigns.route("/campaigns/<id>/", methods = ['DELETE'])
-@isAuthorized
 @isAdmin
 def deleteCampaign(id: str):
     if id is None or id == '':
@@ -63,8 +62,7 @@ def deleteCampaign(id: str):
     else:
         return BadRequest('No campaign was found with that ID.')
 
-@campaigns.route("/campaigns/<id>/", methods = ['POST'])
-@isAuthorized
+@campaigns.route("/campaigns/<id>/", methods = ['PATCH'])
 @isAdmin
 def updateCampaign(id: str):
     if request.get_json() is None:
@@ -74,12 +72,12 @@ def updateCampaign(id: str):
     return OK()
 
 @campaigns.route("/campaigns/<id>/characters", methods = ['POST'])
-@isAuthorized
 @isAdmin
 def updateCampaignCharacters(id: str):
     if request.data is None:
         return BadRequest('No character IDs were provided or the input was invalid. Please provide the IDs as a list e.x: [1, 2, 3]')
 
+    # characterId: [1, 2, 3]
     character = list(filter(lambda x: x is not None, [CharacterService.get(characterId) for characterId in json.loads(request.data)]))
 
     if not isinstance(character, list):
@@ -88,7 +86,28 @@ def updateCampaignCharacters(id: str):
     if len(character) == 0:
         return BadRequest('No characters were found with the given IDs.')
 
-    success = CampaignService.updateCampaignCharacters(id, character)
+    success = CampaignService.addCharacterToCampaign(id, character)
+    if success:
+        return OK()
+    else:
+        return BadRequest('No campaign was found with that ID.')
+    
+@campaigns.route("/campaigns/<id>/users", methods = ['POST'])
+@isAdmin
+def updateCampaignUsers(id: str):
+    if request.data is None:
+        return BadRequest('No user IDs were provided or the input was invalid. Please provide the IDs as a list e.x: [1, 2, 3]')
+
+    # characterId: [1, 2, 3]
+    user = list(filter(lambda x: x is not None, [UserService.get(userId) for userId in json.loads(request.data)]))
+
+    if not isinstance(user, list):
+        return BadRequest('The user IDs must be a list of integers.')
+
+    if len(user) == 0:
+        return BadRequest(f'No user were found with the given IDs. {user}')
+
+    success = CampaignService.addUserToCampaign(id, user)
     if success:
         return OK()
     else:

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from extensions import db
-from sqlalchemy import Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 
 
 # External content to host on the same API service (to be cheap), does not affect CytherNet.
@@ -17,3 +17,11 @@ class Ext_Content(db.Model):
 
     # Extra content to be displayed, can be json format.
     content: str = db.Column(Text)
+    
+    userId: int = db.Column(Integer)
+    characterId: int = db.Column(Integer)
+    value: int = db.Column(Integer)
+    previousValue: int = db.Column(Integer)
+    active: bool = db.Column(Boolean)
+    created: str = db.Column(DateTime)
+    updated: str = db.Column(DateTime)

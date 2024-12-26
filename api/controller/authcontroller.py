@@ -104,7 +104,8 @@ def adminPasswordReset():
 def adminPasswordResetLink():
     if request.get_json() is None:
         return BadRequest('No user was provided or the input was invalid.')
-    user = User(**json.loads(request.data))
+
+    user = User.from_dict(json.loads(request.data))
     foundUser = UserService.getByUsername(user.username)
 
     if foundUser is None:

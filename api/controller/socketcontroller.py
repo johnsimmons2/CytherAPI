@@ -28,7 +28,7 @@ class SocketMessage:
         self.data = data
         self.message = message or f'{event.name} event received'
 
-def force_disconnect():
+def remove_connected_user():
     try:
         session_id = request.sid
         for u in connected_users.keys():
@@ -37,9 +37,11 @@ def force_disconnect():
                 user = connected_users[u]
                 del connected_users[u]
                 break
-        Logger.error('Could not find a user with the given session id.')
     except:
         Logger.error('Failed to disconnect client from websocket. Was the client already disconnected?')
+
+def force_disconnect():
+    remove_connected_user()
     disconnect()
 
 @wsocket.route("/ws", methods = ['GET'])
@@ -49,13 +51,14 @@ def index():
 @socketio.on('connect')
 def handle_connect():
     session_id = request.sid
+    
     Logger.debug(f'Attempt to connect to websocket: {session_id}')
     token = decode_token(get_access_token())
     if not token:
         Logger.debug('No token provided')
         force_disconnect()
         return
-    
+    Logger.debug(f'Token was validated: {session_id}')
     # Check if the user is already connected by this token
     username = token["username"]
     
@@ -75,6 +78,7 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     Logger.debug(f"Received a disconnect request from {request.sid}")
+    remove_connected_user()
     emit('disconnect', {'message': 'Disconnected from websocket'})
 
 @socketio.on('message')

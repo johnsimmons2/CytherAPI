@@ -14,7 +14,6 @@ users = Blueprint('users', __name__)
 
 @users.route("/users", methods = ['GET'])
 @isAdmin
-@isAuthorized
 def get():
     return OK(UserService.getAll())
 
@@ -37,7 +36,6 @@ def getUser(id: str):
 
 @users.route("/users/<id>", methods = ['DELETE'])
 @isAdmin
-@isAuthorized
 def deleteUser(id: str):
     if id is None or id == '' or id == '1':
         return BadRequest("Cannot delete user with given ID of {id}".format(id=id))
@@ -52,21 +50,20 @@ def deleteUser(id: str):
 def updateUser(id: str):
     if request.get_json() is None:
         return BadRequest('No user was provided or the input was invalid.')
-    user = User(**json.loads(request.data))
+    user = User.from_dict(json.loads(request.data))
+    Logger.debug(f"Updating user: {user.id} - {user.username}")
     UserService.updateUser(id, user)
     return OK()
 
 @users.route("/users/<id>/roles", methods = ['GET'])
-@isAuthorized
 @isAdmin
 def getUserRoles(id: str):
-    result = UserService.get(id).roles
+    result = UserService.get(id)
     if result is None:
         return BadRequest('No user was found with that ID.')
-    return OK(result)
+    return OK(result.roles)
 
 @users.route("/users/<id>/roles", methods = ['POST'])
-@isAuthorized
 @isAdmin
 def updateUserRoles(id: str):
     if request.get_json() is None:

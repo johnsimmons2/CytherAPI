@@ -14,5 +14,5 @@ Logger.config_set_handler(FormattedLogHandler().set_color_dates(True))
 
 cors = CORS(resources={r"/*": {"origins": ORIGINS}}, supports_credentials=True)
 db =  SQLAlchemy()
-socketio = SocketIO(cors_allowed_origins=ORIGINS)
+socketio = SocketIO(cors_allowed_origins=ORIGINS, async_mode='gevent', logger=True, engineio_logger=True)
 mail = Mail()

@@ -32,6 +32,10 @@ class Character(db.Model):
     subclass_ = db.relationship("Subclass", uselist=False)
     statsheet = db.relationship("Statsheet", uselist=False, foreign_keys=[statsheetid], backref="statsheetid", cascade="all,delete")
     characterDescription = db.relationship("CharacterDescription", uselist=False, backref="character", cascade="all,delete")
+    
+    @classmethod
+    def from_dict(cls, data):
+        return cls(**data)
 
 @dataclass
 class CharacterDescription(db.Model):

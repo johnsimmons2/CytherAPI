@@ -42,6 +42,10 @@ class ClassService:
                 pass
 
     @classmethod
+    def getAllSubclasses(cls):
+        return cls.querySubclass.all()
+
+    @classmethod
     def getSubclasses(cls, classId: int):
         return cls.querySubclass.filter_by(classId=classId).all()
 

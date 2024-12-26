@@ -49,8 +49,8 @@ class RaceService:
     @classmethod
     def _refresh(cls):
         from api.service.dnd5eapiservice import Dnd5eAPIService
-        Dnd5eAPIService.getRaces()
-        Logger.debug("Refreshing the race database")
+        # Dnd5eAPIService.getRaces()
+        # Logger.debug("Refreshing the race database")
 
     @classmethod
     def getAll(cls) -> list[Race]:

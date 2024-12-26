@@ -1,5 +1,5 @@
-from extensions import db
 from sqlalchemy.orm import Query
+from extensions import db
 from api.model.character import Skill
 
 

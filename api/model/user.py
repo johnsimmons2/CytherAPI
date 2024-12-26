@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from sqlalchemy import ForeignKey, Integer, String, DateTime, Boolean
 from sqlalchemy.orm import relationship
+from api.model.character import Character
 from extensions import db
 
 
@@ -37,6 +38,14 @@ class User(db.Model):
 
     characters = db.relationship('Character', secondary='user_characters', backref='user')
     roles = db.relationship('Role', secondary='user_role', backref='user')
+    
+    @classmethod
+    def from_dict(cls, data):
+        if 'roles' in data:
+            data['roles'] = [Role(**role) for role in data['roles']]
+        if 'characters' in data:
+            data['characters'] = [Character.from_dict(**character) for character in data['characters']]
+        return cls(**data)
 
 @dataclass
 class UserRequest(db.Model):

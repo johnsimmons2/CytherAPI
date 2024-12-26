@@ -19,15 +19,18 @@ from api.controller.skillscontroller import skills
 from api.controller.spellcontroller import spells
 from api.controller.authcontroller import auth
 from api.controller.socketcontroller import wsocket
+from api.controller.campaigncontroller import campaigns
 from api.controller.ext_contentcontroller import ext_content
+from api.controller.notecontroller import notes
 from api.model.user import User
+from api.model.note import Note
 from api.service.dbservice import RoleService, UserService
 from api.service.repo.skillservice import SkillService
 from api.service.repo.statsheetservice import StatsheetService
 from extensions import db, cors, socketio, mail
-
-import eventlet
-
+from gevent import monkey
+from gevent.pywsgi import WSGIServer
+from geventwebsocket.handler import WebSocketHandler
 
 # app.py
 load_dotenv()
@@ -41,13 +44,16 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.register_blueprint(users, url_prefix='/api')
 app.register_blueprint(auth, url_prefix='/api')
 app.register_blueprint(characters, url_prefix='/api')
-app.register_blueprint(campaigncontroller.campaigns, url_prefix='/api')
+app.register_blueprint(campaigns, url_prefix='/api')
 app.register_blueprint(race, url_prefix='/api')
 app.register_blueprint(feats, url_prefix='/api')
 app.register_blueprint(classes, url_prefix='/api')
 app.register_blueprint(skills, url_prefix='/api')
 app.register_blueprint(spells, url_prefix='/api')
 app.register_blueprint(wsocket, url_prefix='/api')
+app.register_blueprint(notes, url_prefix='/api')
+
+monkey.patch_all()
 
 # Register external content
 app.register_blueprint(ext_content, url_prefix='/api')
@@ -127,4 +133,7 @@ if __name__ == "__main__":
 
     if os.getenv('ENVIRONMENT') != 'production':
         Logger.warn("Cyther-API is running on [" + str(os.getenv('ENVIRONMENT')) + "]")
-    socketio.run(app, host='0.0.0.0', port=envPort)
+    
+    # socketio.run(app, host='0.0.0.0', port=envPort)
+    http_server = WSGIServer(('0.0.0.0', envPort), app, handler_class=WebSocketHandler)
+    http_server.serve_forever()

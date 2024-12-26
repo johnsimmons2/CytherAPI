@@ -43,7 +43,6 @@ def verify_token(token: str) -> bool:
         jwtsecret = os.getenv('JWT_SECRET')
         result = jwt.decode(token, jwtsecret, "HS256")
         expired = datetime.datetime.utcnow() > datetime.datetime.utcfromtimestamp(result['exp'])
-        print(result)
         if expired:
             Logger.warn('JWT Token is expired')
             return False
@@ -53,23 +52,33 @@ def verify_token(token: str) -> bool:
     return True
 
 def get_access_token():
-    if request.headers and 'Authorization' in request.headers.keys():
-        data = request.headers['Authorization']
-    elif request.form and 'Authorization' in request.form.keys():
-        data = request.form['Authorization']
-    elif request.data and request.data['Authorization']:
-        data = json.loads(data)
-        data = request.data['Authorization']
-    elif request.args and 'token' in request.args.keys():
-        data = request.args['token']
-    else:
-        Logger.error('Authorization was not supplied.')
-        return None
     try:
-        # Check if data is already a token
-        if 'Bearer' in data:
+        # Check Authorization header
+        if 'Authorization' in request.headers:
+            data = request.headers['Authorization']
+        # Check form data
+        elif 'Authorization' in request.form:
+            data = request.form['Authorization']
+        # Check raw data (JSON payload)
+        elif request.data:
+            try:
+                parsed_data = json.loads(request.data)
+                data = parsed_data.get('Authorization')
+            except json.JSONDecodeError:
+                Logger.error('Request data is not valid JSON.')
+                return None
+        else:
+            Logger.error('Authorization was not supplied.')
+            return None
+
+        # Extract token from "Bearer TOKEN" format
+        if data and 'Bearer' in data:
             return data.split(' ')[1]
-        return data
-    except Exception:
-        Logger.error('Token was not supplied in "Bearer TOKEN" format.')
-    return None
+        elif data:
+            return data
+
+        Logger.error('Authorization was supplied but is invalid.')
+        return None
+    except Exception as e:
+        Logger.error(f'Error extracting access token: {str(e)}')
+        return None

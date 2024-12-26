@@ -68,6 +68,18 @@ class ClassTable(db.Model):
     # # (0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
     # classResource: str = db.Column(String)
 
+@dataclass
+class ClassResource(db.Model):
+    __tablename__ = 'class_resource'
+    id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    classTableId: int = db.Column(Integer, ForeignKey('class_table.id'))
+    name: str = db.Column(String)
+    description: str = db.Column(String)
+    max: int = db.Column(Integer)
+    current: int = db.Column(Integer)
+
+    classTable: Mapped[ClassTable] = db.relationship('ClassTable', backref='classResources')
+
 # Eventually this will track hit dice
 @dataclass
 class Class(db.Model):

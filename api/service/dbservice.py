@@ -105,70 +105,6 @@ class FeatService:
         Logger.success("Creating a new feat with name: " + feat.name)
         return newFeat, []
 
-
-class CampaignService:
-    query = Query(Campaign, db.session)
-
-    @classmethod
-    def get(cls, id: str):
-        return cls.query.filter_by(id=id).first()
-
-    @classmethod
-    def getAll(cls):
-        return cls.query.all()
-
-    @classmethod
-    def getActive(cls):
-        return cls.query.filter_by(active=True).all()
-
-    @classmethod
-    def create(cls, campaign: Campaign):
-        campaign.active = True
-        campaign.created = date.today()
-        campaign.updated = date.today()
-
-        db.session.add(campaign)
-        db.session.commit()
-        return campaign
-
-    @classmethod
-    def updateCampaign(cls, id: str, campaign: Campaign):
-        dbCampaign: Campaign = cls.query.filter_by(id=id).first()
-        dbCampaign.name = (
-            campaign.name if campaign.name is not None else dbCampaign.name
-        )
-        dbCampaign.description = (
-            campaign.description
-            if campaign.description is not None
-            else dbCampaign.description
-        )
-        dbCampaign.updated = date.today()
-        db.session.commit()
-
-    @classmethod
-    def delete(cls, id: str):
-        campaign: Campaign = cls.query.filter_by(id=id).first()
-
-        if campaign is None:
-            return False
-        campaign.active = False
-        db.session.commit()
-        return True
-
-    @classmethod
-    def getCharactersByCampaignID(cls, id: str):
-        return cls.query.filter_by(id=id).first().characters
-
-    @classmethod
-    def updateCampaignCharacters(cls, id: str, characters: list[Character]):
-        campaign: Campaign = cls.query.filter_by(id=id).first()
-        if campaign is None:
-            return False
-        campaign.characters = characters
-        db.session.commit()
-        return True
-
-
 class AuthService:
     # Adds the current lowest level Role to the user if they have no roles.
     @classmethod
@@ -526,16 +462,14 @@ class UserService:
 
     @classmethod
     def updateUser(cls, id: str, user: User):
-        Logger.debug("Updating user with id: " + id)
         dbUser: User = cls.query.filter_by(id=id).first()
-        dbUser.username = (
-            user.username if user.username is not None else dbUser.username
-        )
+        dbUser.username = user.username if user.username is not None else dbUser.username
         dbUser.email = user.email if user.email is not None else dbUser.email
         dbUser.fName = user.fName if user.fName is not None else dbUser.fName
         dbUser.lName = user.lName if user.lName is not None else dbUser.lName
         dbUser.lastOnline = datetime.now()
-
+        print(dbUser)
+        print(user)
         db.session.commit()
 
 class ItemsService:
