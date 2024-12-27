@@ -6,12 +6,6 @@ from api.model.user import User
 from extensions import db
 
 
-note_shared_users = Table(
-    'note_shared_users',
-    db.metadata,
-    Column('noteId', Integer, ForeignKey('note.id')),
-    Column('userId', Integer, ForeignKey('user.id'))
-)
 
 @dataclass
 class Note(db.Model):
@@ -32,7 +26,7 @@ class Note(db.Model):
     shared_users: Mapped[List[User]] = relationship("User", secondary="note_shared_users", backref="shared_notes", cascade="all,delete")
     
 @dataclass
-class NoteSharedUsers:
+class NoteSharedUsers(db.Model):
     __tablename__ = 'note_shared_users'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     noteId: int = db.Column(Integer, ForeignKey('note.id'))
