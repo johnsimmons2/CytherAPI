@@ -1,5 +1,6 @@
 import json
 from flask import Blueprint, request
+from api.controller.controller import NotFound
 from api.model.character import Character
 from api.model.dto.characterDto import CharacterDTO, CharacterDescriptionDTO
 from api.model.dto.spellbookDto import SpellbookDTO
@@ -9,7 +10,7 @@ from api.service.repo.characterservice import CharacterService
 from api.decorator.auth.authdecorators import isAuthorized, isAdmin, isPlayer
 from api.controller import OK, UnAuthorized, BadRequest, Posted, HandleGet
 from api.service.jwthelper import create_token
-from api.service.dbservice import AuthService
+from api.service.dbservice import AuthService, UserService
 from api.service.rolehelper import get_userdto_from_token
 
 
@@ -20,11 +21,13 @@ characters = Blueprint("characters", __name__)
 @isAdmin
 @isAuthorized
 def get():
-    userId = request.args.get("userId", default=None)
+    userId = request.args.get("username", default=None)
     if userId is not None:
         # If the user passes the query parameter ?userId then we will return all characters for that user.
-        return HandleGet(CharacterService.getCharactersByUserId(userId))
-    return HandleGet(CharacterService.getAll())
+        
+        userId = UserService.getByUsername(userId).id
+        return OK(CharacterService.getCharactersByUserId(userId))
+    return OK(CharacterService.getAll())
 
 
 @characters.route("/characters/player", methods=["GET"])
@@ -43,7 +46,20 @@ def getAllNPCs():
 @characters.route("/characters/<id>", methods=["GET"])
 @isAuthorized
 def getCharacter(id: str):
-    return HandleGet(CharacterService.get(id))
+    if id is None or id == '':
+        return BadRequest('No character ID was provided.')
+    if id.isdigit():
+        character = CharacterService.get(id)
+        if character:
+            return OK(character)
+        else:
+            return NotFound('No character was found with that ID.')
+    else:
+        character = CharacterService.getCharacterByName(id)
+        if character:
+            return OK(character)
+        else:
+            return NotFound('No character was found with that username.')
 
 
 @characters.route("/characters", methods=["POST"])

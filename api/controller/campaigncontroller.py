@@ -4,6 +4,7 @@ from api.controller.controller import OK, BadRequest, Posted
 
 from api.decorator.auth.authdecorators import isAdmin, isAuthorized
 from api.model.campaign import Campaign
+from api.model.user import User
 from api.service.dbservice import UserService
 from api.service.repo.characterservice import CharacterService
 from api.service.repo.campaignservice import CampaignService
@@ -22,6 +23,20 @@ def get():
             return BadRequest('The active tag must be a boolean value.')
 
         return OK(CampaignService.getActive(activeTag))
+
+@campaigns.route("/campaigns/user", methods = ['GET'])
+@isAuthorized
+def getForUser():
+    userId = request.args.get('username')
+    if userId is None:
+        return BadRequest('No user ID was provided. Please provide &userId to get the campaigns for.')
+    
+    foundUser: User = UserService.getByUsername(userId)
+    if foundUser:
+        userId = foundUser.id
+    else:
+        return BadRequest('No user was found with the given ID.')
+    return OK(CampaignService.getCampaignsByUserId(userId))
 
 @campaigns.route("/campaigns/<id>", methods = ['GET'])
 @isAuthorized

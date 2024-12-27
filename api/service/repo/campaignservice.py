@@ -112,3 +112,13 @@ class CampaignService:
         campaign.characters = characters
         db.session.commit()
         return True
+    
+    @classmethod
+    def getCampaignsByUserId(cls, userId: str):
+        results = (
+            db.session.query(Campaign)
+            .join(CampaignUsers, CampaignUsers.campaignId == Campaign.id)
+            .filter(CampaignUsers.userId == userId, CampaignUsers.active == True)
+            .all()
+        )
+        return results

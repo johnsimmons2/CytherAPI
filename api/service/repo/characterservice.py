@@ -188,11 +188,8 @@ class CharacterService:
     @classmethod
     def createCharacter(cls, characterDto: CharacterDTO, user: UserDTO):
         Logger.debug("============Creating Character.============")
-        # Errors to return if something goes wrong
-        # The ID of the character once created
-        resultId = None
         # Who will own this character
-        user = None
+        user: User = None
         character = Character()
 
         character.name = characterDto.name
@@ -216,8 +213,6 @@ class CharacterService:
         if subclazz == None:
             raise Exception("Subclass did not match any ID")
 
-        # TODO Check if subclass and add it
-
         character.race = race
         character.class_ = clazz
         character.subclass_ = subclazz
@@ -240,6 +235,10 @@ class CharacterService:
         db.session.add(character)
         db.session.commit()
         return character.id
+
+    @classmethod
+    def getCharacterByName(cls, characterName):
+        return cls.query.filter_by(name=characterName).first()
 
     @classmethod
     def getAll(cls):

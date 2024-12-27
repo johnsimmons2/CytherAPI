@@ -2,11 +2,14 @@ from flask import Blueprint, request
 
 from api.controller.controller import OK, BadRequest, NotFound, Posted, validRequestDataFor
 from api.decorator.auth.authdecorators import isAdmin, isAuthorized
+from api.model.campaign import Campaign
+from api.model.character import Character
 from api.model.note import Note
 from api.model.user import User
 from api.service.dbservice import UserService
 from api.service.jwthelper import decode_token, get_access_token
 from api.service.repo.campaignservice import CampaignService
+from api.service.repo.characterservice import CharacterService
 from api.service.repo.noteservice import NoteService
 
 
@@ -52,7 +55,7 @@ def createUserNote():
         note = Note(**noteJson)
         note.userId = user.id
         note.creator = user
-        createNote(note)
+        return createNote(note)
 
 @notes.route("/notes/campaign", methods = ['POST'])
 @isAdmin
@@ -63,13 +66,20 @@ def createCampaignWideNote():
     noteJson = request.get_json()
     
     token = decode_token(get_access_token())
-    campaign = CampaignService.get(noteJson['campaignId'])
+    if not 'campaignId' in noteJson:
+        return BadRequest("No campaign ID was provided for the note.")
+    campaign: Campaign = CampaignService.get(noteJson['campaignId'])
 
+    if not campaign:
+        return NotFound("The campaign could not be found.")
+    
     if validRequestDataFor(noteJson, Note):
         note = Note(**noteJson)
-        createNote(note)
+        note.userId = None
+        note.campaignId = campaign.id
+        return createNote(note)
         
-@notes.route("/notes/<id>", methods = ['POST'])
+@notes.route("/notes/character", methods = ['POST'])
 @isAuthorized
 def createCharacterNote():
     if request.get_json() is None:
@@ -78,21 +88,24 @@ def createCharacterNote():
     noteJson = request.get_json()
     
     token = decode_token(get_access_token())
-    character = UserService.getCharacter(noteJson['characterId'])
+    character: Character = CharacterService.get(noteJson['characterId'])
+    
+    if not character:
+        return NotFound("The character could not be found.")
     
     if validRequestDataFor(noteJson, Note):
         note = Note(**noteJson)
+        note.creator = UserService.getByUsername(token['username'])
+        note.characterId = character.id
         note.character = character
-        createNote(note)
+        return createNote(note)
 
 def createNote(note: Note):
-    noteJson = request.get_json()
-    if validRequestDataFor(noteJson, Note):
-        created, errors = NoteService.create(note)
-        if created:
-            return Posted(created)
-        else:
-            return BadRequest(errors)
+    created = NoteService.create(note)
+    if created:
+        return Posted(created)
+    else:
+        return BadRequest("The note could not be created.")
         
 @notes.route("/notes/<id>", methods = ['PATCH'])
 @isAuthorized
