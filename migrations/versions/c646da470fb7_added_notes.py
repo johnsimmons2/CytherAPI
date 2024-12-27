@@ -29,10 +29,20 @@ def upgrade() -> None:
                     sa.ForeignKeyConstraint(['userId'], ['user.id'], ),
                     sa.PrimaryKeyConstraint('id')
                     )
-    op.add_column('note', sa.Column('characterId', sa.Integer(), nullable=True))
+    op.add_column('note', sa.Column('userId', sa.Integer(), nullable=True))
     op.create_foreign_key(None, 'note', 'user', ['userId'], ['id'])
+    op.add_column('note', sa.Column('characterId', sa.Integer(), nullable=True))
     op.create_foreign_key(None, 'note', 'character', ['characterId'], ['id'])
-    op.drop_column('note', 'campaignId')
+    
+    op.create_table(
+        'note_shared_users',
+        sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column('noteId', sa.Integer(), nullable=False),
+        sa.Column('userId', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['noteId'], ['note.id'], ),
+        sa.ForeignKeyConstraint(['userId'], ['user.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
     # ### end Alembic commands ###
 
 
