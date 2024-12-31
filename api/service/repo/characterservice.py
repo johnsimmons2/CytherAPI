@@ -7,6 +7,7 @@ from api.model.dto.userDto import UserDTO
 from api.loghandler.logger import Logger
 from sqlalchemy.orm import Query
 
+from api.service.dbservice import UserService
 from api.service.repo.raceservice import RaceService
 from api.service.repo.classservice import ClassService
 from api.service.repo.skillservice import SkillService
@@ -38,6 +39,32 @@ class CharacterService:
         19: (305000, 6),
         20: (355000, 6),
     }
+
+    @classmethod
+    def getOwnerIdFor(cls, characterId: str):
+        userCharacter: UserCharacters = Query(UserCharacters, db.session).filter_by(characterId=characterId).first()
+        if userCharacter is None:
+            return None
+        return userCharacter.userId
+
+    @classmethod
+    def updateUserCharacters(cls, userId: str, characterId: str):
+        user = UserService.get(userId)
+        character = cls.get(characterId)
+        if user is None:
+            raise Exception("User not found")
+        if character is None:
+            raise Exception("Character not found")
+        userCharacter: UserCharacters = Query(UserCharacters, db.session).filter_by(userId=userId).first()
+        if userCharacter is None:
+            Logger.debug(f"Adding character {characterId} to user {userId}")
+            userCharacter = UserCharacters(userId=userId, characterId=characterId)
+            db.session.add(userCharacter)
+        else:
+            Logger.debug(f"Updating character {characterId} for user {userId}")
+            userCharacter.characterId = characterId
+            userCharacter.userId = userId
+        db.session.commit()
 
     @classmethod
     def getXPForLevel(cls, level: int):
@@ -239,7 +266,7 @@ class CharacterService:
     @classmethod
     def getCharacterByName(cls, characterName):
         return cls.query.filter_by(name=characterName).first()
-
+    
     @classmethod
     def getAll(cls):
         return Query(Character, db.session).all()
@@ -256,9 +283,15 @@ class CharacterService:
 
     @classmethod
     def getCharactersByUserId(cls, id: str):
-        query = Query(Character, db.session).join(User.characters)
+        query = Query(Character, db.session) \
+            .join(UserCharacters, UserCharacters.characterId == Character.id) \
+            .filter(UserCharacters.userId == id)
         return query.all()
+    
+    @classmethod
+    def getUserCharacters(cls):
+        return Query(UserCharacters, db.session).all()
 
     @classmethod
     def get(cls, id: str):
-        return Query(Character, db.session).filter_by(id=id).first()
+        return cls.query.filter_by(id=id).first()

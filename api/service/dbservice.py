@@ -468,8 +468,6 @@ class UserService:
         dbUser.fName = user.fName if user.fName is not None else dbUser.fName
         dbUser.lName = user.lName if user.lName is not None else dbUser.lName
         dbUser.lastOnline = datetime.now()
-        print(dbUser)
-        print(user)
         db.session.commit()
 
 class ItemsService:

@@ -4,7 +4,7 @@ from api.model.campaign import CampaignUsers
 from api.model.character import Character
 from api.model.note import Note
 from sqlalchemy.orm import Query
-from api.model.user import User
+from api.model.user import User, UserCharacters
 from extensions import db
 
 
@@ -40,9 +40,17 @@ class NoteService:
     def getAllForUser(cls, id: str):
         created_by = cls.query.filter_by(userId=id)
         shared_with = cls.query.filter(Note.shared_users.any(id=id))
-        character_notes = cls.query.join(Character).filter(Character.userId == id)
-        campaign_notes = cls.query.join(CampaignUsers).join(CampaignUsers.userId).filter(CampaignUsers.userId==id)
-        
+        character_notes = (
+            cls.query
+            .join(UserCharacters, UserCharacters.characterId == Note.characterId)
+            .join(Character, Character.id == UserCharacters.characterId)
+            .filter(UserCharacters.userId == id)
+        )
+        campaign_notes = (
+            cls.query
+            .join(CampaignUsers, CampaignUsers.userId == id)
+            .filter(CampaignUsers.userId == id)
+        )
         return created_by.union(shared_with, character_notes, campaign_notes).all()
     
     @classmethod

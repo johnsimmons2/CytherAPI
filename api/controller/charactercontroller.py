@@ -1,7 +1,9 @@
 import json
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from api.controller.controller import NotFound
+from api.loghandler.logger import Logger
 from api.model.character import Character
+from api.model.user import UserCharacters
 from api.model.dto.characterDto import CharacterDTO, CharacterDescriptionDTO
 from api.model.dto.spellbookDto import SpellbookDTO
 from api.model.dto.statsheetDto import StatsheetDTO
@@ -18,30 +20,30 @@ characters = Blueprint("characters", __name__)
 
 
 @characters.route("/characters", methods=["GET"])
-@isAdmin
-@isAuthorized
+@isPlayer
 def get():
     userId = request.args.get("username", default=None)
+    result = []
     if userId is not None:
         # If the user passes the query parameter ?userId then we will return all characters for that user.
-        
         userId = UserService.getByUsername(userId).id
-        return OK(CharacterService.getCharactersByUserId(userId))
-    return OK(CharacterService.getAll())
-
+        charactersForUser = CharacterService.getCharactersByUserId(userId)
+        result = [ {"character": char, "userId": userId} for char in charactersForUser ]
+        return OK(result)
+    
+    allCharacters = CharacterService.getAll()
+    result = [ { "character": char, "userId": CharacterService.getOwnerIdFor(char.id) } for char in allCharacters ]
+    return OK(result)
 
 @characters.route("/characters/player", methods=["GET"])
 @isAuthorized
 def getAllPlayerCharacters():
     return HandleGet(CharacterService.getAllPlayerCharacters())
 
-
 @characters.route("/characters/npc", methods=["GET"])
-@isAuthorized
 @isAdmin
 def getAllNPCs():
     return HandleGet(CharacterService.getAllNPCs())
-
 
 @characters.route("/characters/<id>", methods=["GET"])
 @isAuthorized
@@ -61,10 +63,8 @@ def getCharacter(id: str):
         else:
             return NotFound('No character was found with that username.')
 
-
 @characters.route("/characters", methods=["POST"])
 @isPlayer
-@isAuthorized
 def makeCharacter():
     if request.get_json() is None:
         return BadRequest("No character was provided or the input was invalid.")
@@ -95,9 +95,7 @@ def makeCharacter():
     except Exception as e:
         return BadRequest(e)
 
-
 @characters.route("/characters/<id>", methods=["PATCH"])
-@isAuthorized
 @isAdmin
 def updateCharacter(id: str):
     if request.get_json() is None:
@@ -108,3 +106,39 @@ def updateCharacter(id: str):
         return Posted()
     else:
         return BadRequest(errors)
+
+@characters.route("/characters/users/<id>", methods=["PATCH"])
+@isAdmin
+def updateCharacterOwner(id: str):
+    if request.get_json() is None:
+        return BadRequest("No userId was provided or the input was invalid.")
+    req = json.loads(request.data)
+    try:
+        result = CharacterService.updateUserCharacters(id, req["characterId"])
+        return OK(result)
+    except Exception as e:
+        Logger.error(e)
+        return BadRequest(e)
+
+@characters.route("/characters/users", methods=["GET"])
+@isAdmin
+def getAllCharactersByUser():
+    characters: list[Character] = CharacterService.getAll()
+    userCharacters: list[UserCharacters] = CharacterService.getUserCharacters()
+    result = {}
+    for character in characters:
+        print(character.id)
+        foundUser = False
+        result.update({character.id: {}})
+        for userCharacter in userCharacters:
+            if character.id == userCharacter.characterId:
+                Logger.debug(f"Found user character: {userCharacter.id} - {userCharacter.characterId}")
+                result[character.id].update({"character": character})
+                result[character.id].update({"userId": userCharacter.userId})
+                foundUser = True
+                continue
+        else:
+            if not foundUser:
+                result[character.id].update({"character": character})
+                result[character.id].update({"userId": None})
+    return OK(result)

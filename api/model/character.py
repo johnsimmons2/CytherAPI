@@ -13,16 +13,16 @@ from api.model import classes
 class Character(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     statsheetid: int = db.Column(Integer, ForeignKey('statsheet.id'), unique=True)
-    raceId: int = db.Column(Integer, ForeignKey('race.id'), unique=True)
-    classId: int = db.Column(Integer, ForeignKey('class.id'), unique=True)
-    subclassId: int = db.Column(Integer, ForeignKey('subclass.id'), unique=True)
+    raceId: int = db.Column(Integer, ForeignKey('race.id'))
+    classId: int = db.Column(Integer, ForeignKey('class.id'))
+    subclassId: int = db.Column(Integer, ForeignKey('subclass.id'))
 
     # 0: Player
     # 1: NPC
     type: int = db.Column(Integer)
     speed: int = db.Column(Integer)
     languages: str = db.Column(String)
-    name: str = db.Column(String)
+    name: str = db.Column(String, unique=True)
 
     # If the campaign compatability number matches the campaign ID, the character may be used.
     campaignCompatability: int = db.Column(Integer)
