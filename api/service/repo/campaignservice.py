@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime, timezone
 from typing import List
 from api.model.campaign import Campaign, CampaignCharacters, CampaignUsers
 from api.model.character import Character
@@ -52,8 +52,9 @@ class CampaignService:
     @classmethod
     def create(cls, campaign: Campaign):
         campaign.active = True
-        campaign.created = date.today()
-        campaign.updated = date.today()
+        date_created = datetime.now(timezone.utc)
+        campaign.created = date_created
+        campaign.updated = date_created
 
         db.session.add(campaign)
         db.session.commit()
@@ -71,7 +72,7 @@ class CampaignService:
         dbCampaign.active = (
             campaign.active if campaign.active is not None else dbCampaign.active
         )
-        dbCampaign.updated = date.today()
+        dbCampaign.updated = datetime.now(timezone.utc)
         db.session.commit()
 
     @classmethod

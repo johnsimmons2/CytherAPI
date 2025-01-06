@@ -134,6 +134,17 @@ def authenticate():
         return OK(dict({"token": str(authenticated)}))
     else:
         return UnAuthorized("Authentication failed")
+    
+@auth.route("/auth/token/refresh", methods = ['POST'])
+def refresh():
+    token = request.args.get('t')
+    if token is None:
+        return BadRequest('No token was provided.')
+    refreshed = AuthService.refresh_token(token)
+    if refreshed is not None:
+        return OK(dict({"token": str(refreshed)}))
+    else:
+        return UnAuthorized("Token could not be refreshed.")
 
 @auth.route("/auth/register", methods = ['POST'])
 def post():

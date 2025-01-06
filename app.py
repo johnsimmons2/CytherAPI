@@ -22,8 +22,8 @@ from api.controller.socketcontroller import wsocket
 from api.controller.campaigncontroller import campaigns
 from api.controller.ext_contentcontroller import ext_content
 from api.controller.notecontroller import notes
-from api.model.user import User
-from api.model.note import Note
+from api.model.user import User, UserRole, UserRequest, UserCharacters
+from api.model.note import Note, Tag, NoteSharedUsers, NoteTags, TagSharedUsers
 from api.service.dbservice import RoleService, UserService
 from api.service.repo.skillservice import SkillService
 from api.service.repo.statsheetservice import StatsheetService
@@ -121,7 +121,6 @@ def after_request(response: Response):
 
 
 with app.app_context():
-    db.create_all()
     db.session.commit()
     RoleService.initRoles()
     UserService.initUsers()

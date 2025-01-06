@@ -20,7 +20,7 @@ from api.model.spellbook import *
 from api.service.config import config
 from api.loghandler.logger import Logger
 from sqlalchemy.orm import Query
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from flask_mail import Message
 from flask import current_app
 from extensions import db
@@ -326,7 +326,7 @@ class AuthService:
         user = None
         secret = inputUser.password
         if inputUser.username is not None:
-            user = query.filter(User.username.ilike(f"%{inputUser.username}%")).first()
+            user = query.filter(func.lower(User.username) == func.lower(inputUser.username)).first()
 
         if not user:
             Logger.error("no user")
@@ -341,8 +341,19 @@ class AuthService:
         else:
             Logger.error("Incorrect password!")
             return None
-
-
+    
+    @classmethod
+    def refresh_token(cls, token: str) -> str | None:
+        try:
+            decoded = jwth.decode_token(token)
+            Logger.debug(decoded)
+            user = Query(User, db.session).filter_by(username=decoded["username"]).first()
+            if user is not None:
+                return jwth.create_token(user)
+        except Exception as error:
+            Logger.error(error)
+        return None
+    
 class RoleService:
     query = Query(Role, db.session)
 
@@ -383,7 +394,7 @@ class UserService:
     def getCurrentUserRoles(cls):
         username = jwth.decode_token(jwth.get_access_token())["username"]
         if username is not None:
-            return cls.query.filter(User.username.ilike(f"%{username}%")).first().roles
+            return cls.query.filter(func.lower(User.username) == func.lower(username)).first().roles
         else:
             return None
 
@@ -439,7 +450,7 @@ class UserService:
 
     @classmethod
     def getByUsername(cls, username: str):
-        return cls.query.filter(User.username.ilike(f"%{username}%")).first()
+        return cls.query.filter(func.lower(User.username) == func.lower(username)).first()
 
     @classmethod
     def getByEmail(cls, email: str) -> User | None:
@@ -455,7 +466,7 @@ class UserService:
             )
         if user.username is not None and not exist:
             exist = (
-                cls.query.filter(User.username.ilike(f"%{user.username}%")).first()
+                cls.query.filter(func.lower(User.username) == func.lower(user.username)).first()
                 is not None
             )
         return exist
