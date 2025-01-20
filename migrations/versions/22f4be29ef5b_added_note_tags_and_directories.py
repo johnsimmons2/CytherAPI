@@ -40,7 +40,7 @@ def upgrade() -> None:
         'note_tags',
         sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
         sa.Column('noteId', sa.Integer()),
-        sa.Column('tagId', sa.Text()),
+        sa.Column('tagId', sa.Integer()),
         sa.ForeignKeyConstraint(['noteId'], ['note.id'], ),
         sa.ForeignKeyConstraint(['tagId'], ['tag.id'], ),
         sa.PrimaryKeyConstraint('id')
