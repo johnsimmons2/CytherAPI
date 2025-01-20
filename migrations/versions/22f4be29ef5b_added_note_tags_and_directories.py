@@ -39,7 +39,7 @@ def upgrade() -> None:
     op.create_table(
         'note_tags',
         sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column('noteId', sa.String()),
+        sa.Column('noteId', sa.Integer()),
         sa.Column('tagId', sa.Text()),
         sa.ForeignKeyConstraint(['noteId'], ['note.id'], ),
         sa.ForeignKeyConstraint(['tagId'], ['tag.id'], ),

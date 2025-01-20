@@ -2,6 +2,7 @@ from flask import Blueprint, request
 
 from api.controller.controller import OK, BadRequest, Forbidden, NotFound, Posted, validRequestDataFor
 from api.decorator.auth.authdecorators import isAdmin, isAuthorized
+from api.loghandler.logger import Logger
 from api.model.campaign import Campaign
 from api.model.character import Character
 from api.model.note import Note
@@ -59,6 +60,7 @@ def createUserNote():
         note.userId = user.id
         note.creator = user
         return _createNote(note)
+    return BadRequest("The note could not be created, Invalid Data.")
 
 '''
     Shortcut route for admins only.
@@ -85,6 +87,7 @@ def createCampaignWideNote():
         note.userId = None
         note.campaignId = campaign.id
         return _createNote(note)
+    return BadRequest("The note could not be created, Invalid Data.")
 
 def _createNote(note: Note):
     created = NoteService.create(note)
@@ -170,6 +173,7 @@ def deleteNoteById(id: str):
 
 @notes.route("/notes/share", methods = ['POST'])
 def shareNote():
+    # Only let admins share "any" note
     if request.get_json() is None:
         return BadRequest("No JSON was provided for the note.")
     
@@ -191,7 +195,7 @@ def shareNote():
             note = NoteService.shareNote(userIds, noteJson['noteId'])
         else:
             note = NoteService.shareNoteDirectory(userIds, noteJson['directory'])
-    
+    Logger.debug(note)
     if note:
         return OK(note)
     else:

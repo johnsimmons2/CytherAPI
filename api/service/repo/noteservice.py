@@ -29,10 +29,18 @@ class NoteService:
     @classmethod
     def create(cls, note: Note):
         date_created = datetime.now(timezone.utc)
-        note.created = date_created
-        note.updated = date_created
-        note.active = True
-        db.session.add(note)
+        newNote = Note()
+        
+        newNote.created = date_created
+        newNote.updated = date_created
+        newNote.active = True
+        newNote.creator = note.creator
+        newNote.userId = note.userId
+        newNote.description = note.description
+        newNote.name = note.name
+        newNote.directory = note.directory
+        
+        db.session.add(newNote)
         db.session.commit()
         return note
 
