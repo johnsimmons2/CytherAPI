@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 import os
 from alembic import context
-from api.model import character, classes, dice, items, spellbook, spells, user, ext_content, campaign, note
+from api.model import *
 from extensions import db
 
 

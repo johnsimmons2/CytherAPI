@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from sqlalchemy import String, Integer, ForeignKey
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Text
+from sqlalchemy.sql.sqltypes import Text, String, Integer, Boolean, DateTime, Enum
+from api.model.enums import EquipSlots
 from extensions import db
 from api.model.dice import Hitdice
 from api.model.spellbook import Spellbook
@@ -11,123 +12,98 @@ from api.model import classes
 # TODO: Change race to a relationship
 @dataclass
 class Character(db.Model):
+    __tablename__ = "character"
+    
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     statsheetid: int = db.Column(Integer, ForeignKey('statsheet.id'), unique=True)
-    raceId: int = db.Column(Integer, ForeignKey('race.id'))
-    classId: int = db.Column(Integer, ForeignKey('class.id'))
-    subclassId: int = db.Column(Integer, ForeignKey('subclass.id'))
-
-    # 0: Player
-    # 1: NPC
-    type: int = db.Column(Integer)
-    speed: int = db.Column(Integer)
-    languages: str = db.Column(String)
-    name: str = db.Column(String, unique=True)
-
-    # If the campaign compatability number matches the campaign ID, the character may be used.
-    campaignCompatability: int = db.Column(Integer)
-
-    race = db.relationship("Race", uselist=False)
-    class_ = db.relationship("Class", uselist=False)
-    subclass_ = db.relationship("Subclass", uselist=False)
-    statsheet = db.relationship("Statsheet", uselist=False, foreign_keys=[statsheetid], backref="statsheetid", cascade="all,delete")
-    characterDescription = db.relationship("CharacterDescription", uselist=False, backref="character", cascade="all,delete")
+    raceId: int = db.Column(Integer, ForeignKey('race.id'), nullable=False)
+    userId: int = db.Column(Integer, ForeignKey('user.id'))
+    isNpc: bool = db.Column(Boolean, nullable=False)
+    
+    age: int = db.Column(Integer)
+    
+    height: str = db.Column(String)
+    weight: str = db.Column(String)
+    eye_color: str = db.Column(String)
+    skin_color: str = db.Column(String)
+    hair_color: str = db.Column(String)
+    alignment: str = db.Column(String)
+    religion: str = db.Column(String)
+    
+    description: str = db.Column(Text)
+    appearance: str = db.Column(Text)
+    bonds: str = db.Column(Text)
+    ideals: str = db.Column(Text)
+    personality: str = db.Column(Text)
+    flaws: str = db.Column(Text)
+    backstory: str = db.Column(Text)
+    
+    created: str = db.Column(DateTime)
+    updated: str = db.Column(DateTime)
     
     @classmethod
     def from_dict(cls, data):
         return cls(**data)
 
 @dataclass
-class CharacterDescription(db.Model):
+class CharacterFeat(db.Model):
+    __tablename__ = 'character_feat'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
-    characterId: int = db.Column(Integer, ForeignKey('character.id'), unique=True)
-    age: str = db.Column(String, nullable=True)
-    height: str = db.Column(String, nullable=True)
-    weight: str = db.Column(String, nullable=True)
-    eyes: str = db.Column(String, nullable=True)
-    skin: str = db.Column(String, nullable=True)
-    hair: str = db.Column(String, nullable=True)
-
-    background: str = db.Column(Text, nullable=True)
-    appearance: str = db.Column(Text, nullable=True)
-    bonds: str = db.Column(Text, nullable=True)
-    ideals: str = db.Column(Text, nullable=True)
-    personality: str = db.Column(Text, nullable=True)
-    flaws: str = db.Column(Text, nullable=True)
-    religion: str = db.Column(Text, nullable=True)
-    backstory: str = db.Column(Text, nullable=True)
+    characterId: int = db.Column(Integer, ForeignKey('character.id'))
+    featId: int = db.Column(Integer, ForeignKey('feat.id'))
 
 @dataclass
-class Skill(db.Model):
-    __tablename__ = 'skill'
+class CharacterRelationship(db.Model):
+    __tablename__ = 'character_relationship'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
-    name: str = db.Column(String)
-    description: str = db.Column(String)
+    characterId: int = db.Column(Integer, ForeignKey('character.id'), nullable=False)
+    otherCharacterId: int = db.Column(Integer, ForeignKey('character.id'), nullable=False)
+    allies: bool = db.Column(Boolean, nullable=False)
+    enemies: bool = db.Column(Boolean, nullable=False)
 
-# TODO: Make default entries in startup alongside roles, or relate to stats table for future custom stats
 @dataclass
-class Proficiency(db.Model):
-    __tablename__ = 'proficiency'
+class CharacterClass(db.Model):
+    __tablename__ = 'character_class'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
-    name: str = db.Column(String, unique=True)
-    description: str = db.Column(String)
-
-# TODO: Make default entries in startup alongside roles
+    characterId: int = db.Column(Integer, ForeignKey('character.id'), nullable=False)
+    classId: int = db.Column(Integer, ForeignKey('class.id'), nullable=False)
+    subclassId: int = db.Column(Integer, ForeignKey('class.id'), nullable=False)
+    usedHitDice: int = db.Column(Integer)
+    level: int = db.Column(Integer)
+    xp: int = db.Column(Integer)
+    
 @dataclass
-class SavingThrow(db.Model):
-    __tablename__ = 'savingthrow'
+class CharacterLanguage(db.Model):
+    __tablename__ = 'character_language'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
-    statName: str = db.Column(String)
+    characterId: int = db.Column(Integer, ForeignKey('character.id'), nullable=False)
+    languageId: int = db.Column(Integer, ForeignKey('language.id'), nullable=False)
+    
+@dataclass
+class CharacterCondition(db.Model):
+    __tablename__ = 'character_condition'
+    id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    characterId: int = db.Column(Integer, ForeignKey('character.id'), nullable=False)
+    conditionId: int = db.Column(Integer, ForeignKey('condition.id'), nullable=False)
+    source: str = db.Column(String)
+    duration: str = db.Column(String)
+    stacks: int = db.Column(Integer)
 
-class StatsheetProficiencies(db.Model):
-    __tablename__ = 'statsheet_proficiencies'
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
-    statsheetId = db.Column(Integer, ForeignKey('statsheet.id'))
-    proficiencyId = db.Column(Integer, ForeignKey('proficiency.id'))
+@dataclass
+class InventoryShared(db.Model):
+    __tablename__ = 'inventory_shared'
+    id: int = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    inventoryId: int = db.Column(Integer, ForeignKey('inventory.id'), nullable=False)
+    sharedUserId: int = db.Column(Integer, ForeignKey('user.id'), nullable=False)
 
-class StatsheetSkills(db.Model):
-    __tablename__ = 'statsheet_skills'
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
-    statsheetId = db.Column(Integer, ForeignKey('statsheet.id'))
-    skillId = db.Column(Integer, ForeignKey('skill.id'))
-
-class StatsheetSavingThrows(db.Model):
-    __tablename__ = 'statsheet_savingthrows'
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
-    statsheetId = db.Column(Integer, ForeignKey('statsheet.id'))
-    savingThrowId = db.Column(Integer, ForeignKey('savingthrow.id'))
-
-class Statsheet(db.Model):
-    __tablename__ = 'statsheet'
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
-    spellbookId = db.Column(Integer, db.ForeignKey('spellbook.id'), unique=True)
-
-    inspiration = db.Column(Integer, default=0)
-
-    exp = db.Column(Integer)
-    level = db.Column(Integer)
-    health = db.Column(Integer)
-
-    strength = db.Column(Integer)
-    dexterity = db.Column(Integer)
-    constitution = db.Column(Integer)
-    intelligence = db.Column(Integer)
-    wisdom = db.Column(Integer)
-    charisma = db.Column(Integer)
-
-    # 0: Base stats
-    # 1: Current stats
-    type = db.Column(Integer)
-
-    proficiencies = db.relationship("Proficiency", secondary="statsheet_proficiencies", backref="statsheet")
-    savingThrows = db.relationship("SavingThrow", secondary="statsheet_savingthrows", backref="statsheet")
-    skills = db.relationship("Skill", secondary="statsheet_skills", backref="statsheet")
-    spellbook = db.relationship("Spellbook", uselist=False, back_populates="statsheet", cascade="all,delete")
-    hitdice = db.relationship("Hitdice", uselist=False, back_populates="statsheet", cascade="all,delete")
-
+@dataclass
 class Inventory(db.Model):
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
-    characterId = db.Column(Integer, db.ForeignKey('character.id'), unique=True)
-
-    itemId = db.Column(Integer)
-    quantity = db.Column(Integer)
+    __tablename__ = 'inventory'
+    id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    characterId: int = db.Column(Integer, ForeignKey('character.id'), nullable=False)
+    itemId: int = db.Column(Integer, ForeignKey('item.id'), nullable=False)
+    quantity: int = db.Column(Integer, default=1)
+    equipped: bool = db.Column(Boolean, default=False)
+    equipSlot: str = db.Column(Enum(EquipSlots), nullable=True)
+    attuned: bool = db.Column(Boolean, default=False)
+    updated: str = db.Column(DateTime)

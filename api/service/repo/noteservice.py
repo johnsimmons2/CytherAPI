@@ -95,6 +95,8 @@ class NoteService:
                 foundNote.name = note.name
             if note.description:
                 foundNote.description = note.description
+            if note.directory:
+                foundNote.directory = note.directory
             if note.active:
                 foundNote.active = note.active
             foundNote.updated = datetime.now(timezone.utc)

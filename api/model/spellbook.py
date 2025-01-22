@@ -1,61 +1,36 @@
-from sqlalchemy import Integer, ForeignKey
+from dataclasses import dataclass
+from sqlalchemy import Boolean, ForeignKey
+from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy.orm import relationship
 from extensions import db
 
 
+@dataclass
 class Spellbook(db.Model):
     __tablename__ = 'spellbook'
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
-    # knowledgeId = db.Column(Integer, ForeignKey('spellbookknowledge.id'))
-    # preparedId = db.Column(Integer, ForeignKey('spellbookprepared.id'))
-    # cantripId = db.Column(Integer, ForeignKey('cantripknowledge.id'))
+    id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    statsheetId: int = db.Column(Integer, ForeignKey('statsheet.id'), nullable=False)
+    spellCastingAbilityId: int = db.Column(Integer, ForeignKey('ability.id'), nullable=False)
+    spellslot1: int = db.Column(Integer)
+    spellslot2: int = db.Column(Integer)
+    spellslot3: int = db.Column(Integer)
+    spellslot4: int = db.Column(Integer)
+    spellslot5: int = db.Column(Integer)
+    spellslot6: int = db.Column(Integer)
+    spellslot7: int = db.Column(Integer)
+    spellslot8: int = db.Column(Integer)
+    spellslot9: int = db.Column(Integer)
+    cantrips: int = db.Column(Integer)
+    spellsKnown: int = db.Column(Integer)
+    spellsPrepared: int = db.Column(Integer)
+    actions: int = db.Column(Integer)
+    bonusActions: int = db.Column(Integer)
 
-    spellslot1 = db.Column(Integer)
-    spellslot2 = db.Column(Integer)
-    spellslot3 = db.Column(Integer)
-    spellslot4 = db.Column(Integer)
-    spellslot5 = db.Column(Integer)
-    spellslot6 = db.Column(Integer)
-    spellslot7 = db.Column(Integer)
-    spellslot8 = db.Column(Integer)
-    spellslot9 = db.Column(Integer)
-    warlockslots = db.Column(Integer)
-    warlockslotlevel = db.Column(Integer)
-
-    statsheet = relationship("Statsheet", back_populates="spellbook")
-    knowledge = relationship("SpellbookKnowledge", back_populates="spellbook")
-    prepared = relationship("SpellbookPrepared", back_populates="spellbook")
-    cantrips = relationship("CantripKnowledge", back_populates="spellbook")
-
-    query = db.Query
-
-class SpellbookKnowledge(db.Model):
-    __tablename__ = 'spellbookknowledge'
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
-    spellbookId = db.Column(Integer, ForeignKey('spellbook.id'))
-    spellId = db.Column(Integer, ForeignKey('spells.id'))
-
-    spellbook = relationship("Spellbook", back_populates="knowledge")
-    spell = relationship("Spells")
-
-    query = db.Query
-
-class SpellbookPrepared(db.Model):
-    __tablename__ = 'spellbookprepared'
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
-    spellbookId = db.Column(Integer, ForeignKey('spellbook.id'))
-    spellId = db.Column(Integer, ForeignKey('spells.id'))
-
-    spellbook = relationship("Spellbook", back_populates="prepared")
-    spell = relationship("Spells")
-
-    query = db.Query
-
-# TODO: DEPRECATE? Level 0 spells are already cantrips
-class CantripKnowledge(db.Model):
-    __tablename__ = 'cantripknowledge'
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
-    spellbookId = db.Column(Integer, ForeignKey('spellbook.id'))
-    spellId = db.Column(Integer)
-
-    spellbook = relationship("Spellbook", back_populates="cantrips")
+@dataclass
+class SpellbookSpell(db.Model):
+    __tablename__ = 'spellbook_spell'
+    id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    spellbookId: int = db.Column(Integer, ForeignKey('spellbook.id'), nullable=False)
+    spellId: int = db.Column(Integer, ForeignKey('spell.id'), nullable=False)
+    spellLevel: int = db.Column(Integer) # So I can give users 3rd level spell 'X' but naturally upcast to 5th level.
+    isCantrip: bool = db.Column(Boolean, default=False) # So I can give users a spell as a cantrip

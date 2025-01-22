@@ -55,12 +55,13 @@ def createUserNote():
     username = token['username']
     user: User = UserService.getByUsername(username)
         
-    if validRequestDataFor(noteJson, Note):
+    try:
         note = Note(**noteJson)
         note.userId = user.id
         note.creator = user
         return _createNote(note)
-    return BadRequest("The note could not be created, Invalid Data.")
+    except:
+        return BadRequest("The note could not be created, Invalid Data.")
 
 '''
     Shortcut route for admins only.
@@ -82,12 +83,13 @@ def createCampaignWideNote():
     if not campaign:
         return NotFound("The campaign could not be found.")
     
-    if validRequestDataFor(noteJson, Note):
+    try:
         note = Note(**noteJson)
         note.userId = None
         note.campaignId = campaign.id
         return _createNote(note)
-    return BadRequest("The note could not be created, Invalid Data.")
+    except Exception as e:
+        return BadRequest("The note could not be created, Invalid Data.")
 
 def _createNote(note: Note):
     created = NoteService.create(note)
@@ -104,9 +106,20 @@ def updateNote(id: str):
         return BadRequest("No JSON was provided for the note.")
     
     noteJson = request.get_json()
+    
+    isadmin = False
+    ownsnote = False
+    
+    
     newNote = Note()
     if 'description' in noteJson:
         newNote.description = noteJson['description']
+    
+    if 'directory' in noteJson:
+        newNote.directory = noteJson['directory']
+    
+    if 'name' in noteJson:
+        newNote.name = noteJson['name']
         
     updated = NoteService.update(id, newNote)
     if updated:

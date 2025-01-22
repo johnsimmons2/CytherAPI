@@ -1,14 +1,9 @@
 import os
 from dotenv import load_dotenv
 from flask import Flask, request
-from flask.wrappers import Request, Response
-from flask_cors import CORS
-from flask_mail import Mail, Message
-from flask_socketio import SocketIO
+from flask.wrappers import Response
 from sqlalchemy.engine import URL
-from api.controller import campaigncontroller
 from api.loghandler.logger import Logger
-from api.loghandler.formatted import FormattedLogHandler
 from api.service.config import config, set_config_path
 from api.controller.usercontroller import users
 from api.controller.charactercontroller import characters
@@ -21,9 +16,8 @@ from api.controller.authcontroller import auth
 from api.controller.socketcontroller import wsocket
 from api.controller.campaigncontroller import campaigns
 from api.controller.ext_contentcontroller import ext_content
+from api.controller.itemscontroller import items
 from api.controller.notecontroller import notes
-from api.model.user import User, UserRole, UserRequest, UserCharacters
-from api.model.note import Note, Tag, NoteSharedUsers, NoteTags, TagSharedUsers
 from api.service.dbservice import RoleService, UserService
 from api.service.repo.skillservice import SkillService
 from api.service.repo.statsheetservice import StatsheetService
@@ -52,6 +46,7 @@ app.register_blueprint(skills, url_prefix='/api')
 app.register_blueprint(spells, url_prefix='/api')
 app.register_blueprint(wsocket, url_prefix='/api')
 app.register_blueprint(notes, url_prefix='/api')
+app.register_blueprint(items, url_prefix='/api')
 
 monkey.patch_all()
 
@@ -70,13 +65,11 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('ADMIN_EMAIL')
 set_config_path(os.path.dirname(os.path.realpath(__file__)))
 
 dburl = os.getenv('DATABASE_URL')
-envPort = os.getenv('PORT')
+envPort = int(os.getenv('PORT', 5000))
 apiVersion = os.getenv('API_VERSION')
 
 Logger.debug("API Version: " + str(apiVersion))
-
-if envPort is None:
-  envPort = 5000
+Logger.debug("Environment Port: " + str(envPort))
 
 if dburl is not None:
 
