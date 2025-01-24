@@ -14,10 +14,6 @@ class ItemBaseType(Enum):
     Misc = "Miscellaneous"
     KeyItem = "Key Items"
     
-    def __init__(self, value, name):
-        self.id = value
-        self.display = name
-    
 # X0 -> rarity
 class ItemRarity(Enum):
     Common = "Common"
@@ -29,10 +25,6 @@ class ItemRarity(Enum):
     Relic = "Relic"
     Unique = "Unique"
     Alchemical = "Alchemical"
-    
-    def __init__(self, value, name):
-        self.id = value
-        self.display = name
 
 # X00 -> weight
 class ItemWeight(Enum):
@@ -41,28 +33,16 @@ class ItemWeight(Enum):
     Medium = "Medium"
     Heavy = "Heavy"
     ExtremelyHeavy = "Extremely Heavy"
-    
-    def __init__(self, value, name):
-        self.id = value
-        self.display = name
 
 # X_000 -> property
 class ItemProperty(Enum):
     BaseItem = "Campaign Item"
     UniqueItem = "Player Item"
-    
-    def __init__(self, value, name):
-        self.id = value
-        self.display = name
 
 # X0_000 -> stackable
 class ItemStackable(Enum):
     Stackable = "Stackable"
     NotStackable = "Not Stackable"
-    
-    def __init__(self, value, name):
-        self.id = value
-        self.display = name
 
 # X00_000 -> condition
 class ItemCondition(Enum):
@@ -72,10 +52,6 @@ class ItemCondition(Enum):
     Fair = "Fair"
     Poor = "Poor"
     Broken = "Broken"
-    
-    def __init__(self, value, name):
-        self.id = value
-        self.display = name
 
 # X_000_000 -> material
 class ItemMaterial(Enum):
@@ -89,7 +65,3 @@ class ItemMaterial(Enum):
     Organic = "Organic"
     Parchment = "Parchment"
     Magical = "Magical"
-    
-    def __init__(self, value, name):
-        self.id = value
-        self.display = name

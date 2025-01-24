@@ -7,20 +7,25 @@ from api.loghandler.logger import Logger
 from api.service.config import config, set_config_path
 from api.controller.usercontroller import users
 from api.controller.charactercontroller import characters
-from api.controller.racecontroller import race
-from api.controller.featcontroller import feats
-from api.controller.classcontroller import classes
-from api.controller.skillscontroller import skills
-from api.controller.spellcontroller import spells
-from api.controller.authcontroller import auth
-from api.controller.socketcontroller import wsocket
-from api.controller.campaigncontroller import campaigns
-from api.controller.ext_contentcontroller import ext_content
-from api.controller.itemscontroller import items
-from api.controller.notecontroller import notes
+from api.controller.racecontroller import race as rbp
+from api.controller.featcontroller import feats as fbp
+from api.controller.classcontroller import classes as cbp
+from api.controller.skillscontroller import skills as skbp
+from api.controller.spellcontroller import spells as sbp
+from api.controller.authcontroller import auth as abp
+from api.controller.socketcontroller import wsocket as wsbp
+from api.controller.campaigncontroller import campaigns as cabp
+from api.controller.ext_contentcontroller import ext_content as extbp
+from api.controller.itemscontroller import items as ibp
+from api.controller.notecontroller import notes as nbp
 from api.service.dbservice import RoleService, UserService
+from api.service.repo.abilityservice import AbilityService
+from api.service.repo.conditionsservice import ConditionsService
+from api.service.repo.damagetypesservice import DamageTypeService
+from api.service.repo.languageservice import LanguageService
 from api.service.repo.skillservice import SkillService
 from api.service.repo.statsheetservice import StatsheetService
+from api.model import *
 from extensions import db, cors, socketio, mail
 from gevent import monkey
 from gevent.pywsgi import WSGIServer
@@ -36,22 +41,22 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Register routes
 
 app.register_blueprint(users, url_prefix='/api')
-app.register_blueprint(auth, url_prefix='/api')
+app.register_blueprint(abp, url_prefix='/api')
 app.register_blueprint(characters, url_prefix='/api')
-app.register_blueprint(campaigns, url_prefix='/api')
-app.register_blueprint(race, url_prefix='/api')
-app.register_blueprint(feats, url_prefix='/api')
-app.register_blueprint(classes, url_prefix='/api')
-app.register_blueprint(skills, url_prefix='/api')
-app.register_blueprint(spells, url_prefix='/api')
-app.register_blueprint(wsocket, url_prefix='/api')
-app.register_blueprint(notes, url_prefix='/api')
-app.register_blueprint(items, url_prefix='/api')
+app.register_blueprint(cbp, url_prefix='/api')
+app.register_blueprint(rbp, url_prefix='/api')
+app.register_blueprint(fbp, url_prefix='/api')
+app.register_blueprint(cabp, url_prefix='/api')
+app.register_blueprint(sbp, url_prefix='/api')
+app.register_blueprint(skbp, url_prefix='/api')
+app.register_blueprint(wsbp, url_prefix='/api')
+app.register_blueprint(nbp, url_prefix='/api')
+app.register_blueprint(ibp, url_prefix='/api')
+app.register_blueprint(extbp, url_prefix='/api')
 
 monkey.patch_all()
 
 # Register external content
-app.register_blueprint(ext_content, url_prefix='/api')
 
 # Register mailtrap client
 app.config['MAIL_SERVER'] = 'live.smtp.mailtrap.io'
@@ -114,12 +119,15 @@ def after_request(response: Response):
 
 
 with app.app_context():
-    db.session.commit()
     RoleService.initRoles()
     UserService.initUsers()
-    SkillService.initBaseSkills()
-    StatsheetService.initSavingThrows()
-
+    AbilityService.init_default_abilities()
+    DamageTypeService.init_default_damage_types()
+    SkillService.init_default_skills()
+    ConditionsService.init_default_conditions()
+    LanguageService.init_default_languages()
+    db.session.commit()
+    
 if __name__ == "__main__":
     Logger.debug("Starting Cyther-API on port " + str(envPort))
 

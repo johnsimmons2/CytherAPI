@@ -23,7 +23,7 @@ class ClassTable(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     classId: int = db.Column(Integer, ForeignKey('class.id'), nullable=False)
     resourceId: int = db.Column(Integer, ForeignKey('class_resource.id'), nullable=True)
-    equipTypeId: int = db.Column(Integer, ForeignKey('equip_type.id'), nullable=True)
+    equipTypeId: int = db.Column(Integer, ForeignKey('equipment_type.id'), nullable=True)
     featId: int = db.Column(Integer, ForeignKey('feat.id'), nullable=True)
     resourceQuantity: int = db.Column(Integer)
     level: int = db.Column(Integer)
@@ -37,3 +37,9 @@ class ClassResource(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     name: str = db.Column(String)
     description: str = db.Column(Text)
+    
+@dataclass
+class ClassFeat(db.Model):
+    id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    classId: int = db.Column(Integer, ForeignKey('class.id'), nullable=False)
+    featId: int = db.Column(Integer, ForeignKey('feat.id'), nullable=False)

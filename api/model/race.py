@@ -1,8 +1,6 @@
 from dataclasses import dataclass
-from typing import Optional
 from sqlalchemy import ForeignKey
 from sqlalchemy.sql.sqltypes import String, Integer, Enum
-from sqlalchemy.orm import relationship, Mapped
 from api.model.enums import CreatureTypes
 from extensions import db
 
@@ -13,7 +11,7 @@ class Race(db.Model):
     name: str = db.Column(String)
     description: str = db.Column(String)
     size: str = db.Column(String, nullable=False)
-    type: str = db.Column(Enum(CreatureTypes), nullable=False)
+    type: str = db.Column(Enum(CreatureTypes), nullable=True)
     walkSpeed: int = db.Column(Integer, nullable=False)
     swimSpeed: int = db.Column(Integer)
     flySpeed: int = db.Column(Integer)

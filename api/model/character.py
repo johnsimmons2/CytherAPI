@@ -1,19 +1,13 @@
 from dataclasses import dataclass
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Text, String, Integer, Boolean, DateTime, Enum
+from sqlalchemy import ForeignKey, Enum
+from sqlalchemy.sql.sqltypes import Text, String, Integer, Boolean, DateTime
 from api.model.enums import EquipSlots
 from extensions import db
-from api.model.dice import Hitdice
-from api.model.spellbook import Spellbook
-from api.model import classes
 
 
-# TODO: Change race to a relationship
 @dataclass
 class Character(db.Model):
     __tablename__ = "character"
-    
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     statsheetid: int = db.Column(Integer, ForeignKey('statsheet.id'), unique=True)
     raceId: int = db.Column(Integer, ForeignKey('race.id'), nullable=False)
@@ -21,7 +15,6 @@ class Character(db.Model):
     isNpc: bool = db.Column(Boolean, nullable=False)
     
     age: int = db.Column(Integer)
-    
     height: str = db.Column(String)
     weight: str = db.Column(String)
     eye_color: str = db.Column(String)
@@ -29,7 +22,6 @@ class Character(db.Model):
     hair_color: str = db.Column(String)
     alignment: str = db.Column(String)
     religion: str = db.Column(String)
-    
     description: str = db.Column(Text)
     appearance: str = db.Column(Text)
     bonds: str = db.Column(Text)

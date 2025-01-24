@@ -3,7 +3,8 @@ from flask import Blueprint, request
 from api.controller.controller import OK, BadRequest, NotFound, ServerError, validRequestDataFor, Posted, HandleGet
 
 from api.decorator.auth.authdecorators import isAdmin, isAuthorized
-from api.model.classes import Class, Race
+from api.model.classes import Class
+from api.model.race import Race
 from api.service.repo.classservice import ClassService
 
 

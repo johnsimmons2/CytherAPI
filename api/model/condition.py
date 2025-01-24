@@ -17,6 +17,7 @@ class ConditionEffect(db.Model):
     __tablename__ = "condition_effect"
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     conditionId: int = db.Column(Integer, ForeignKey('condition.id'), nullable=False)
+    description: str = db.Column(String, nullable=True)
     vulnerableId: int = db.Column(Integer, ForeignKey('damage_type.id'), nullable=True)
     resistantId: int = db.Column(Integer, ForeignKey('damage_type.id'), nullable=True)
     immuneId: int = db.Column(Integer, ForeignKey('damage_type.id'), nullable=True)

@@ -25,7 +25,7 @@ def create_token(user: User) -> str:
     return jwt.encode({
         'username': user.username,
         'email': user.email,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=120),
         'roles': [{'roleName': role.roleName, 'level': role.level} for role in user.roles]
         }, os.getenv('JWT_SECRET'), "HS256")
 

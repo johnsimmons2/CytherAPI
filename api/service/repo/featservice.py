@@ -1,13 +1,116 @@
 from sqlalchemy.orm import Query
 from api.loghandler.logger import Logger
+from api.model.character import CharacterFeat
+from api.model.classes import ClassFeat
 from api.model.race import RaceFeat
 from extensions import db
-from api.model.feat import Feat
+from api.model.feat import Feat, FeatEffect
 
 
 class FeatService:
     query = Query(Feat, db.session)
     raceFeatQuery = Query(RaceFeat, db.session)
+    classFeatQuery = Query(ClassFeat, db.session)
+    characterFeatQuery = Query(CharacterFeat, db.session)
+
+    @classmethod
+    def getFeatEffectFromJSON(cls, effect: dict) -> FeatEffect:
+        newEffect = FeatEffect()
+        newEffect.conditionId = effect.get("conditionId")
+        newEffect.vulnerableId = effect.get("vulnerableId")
+        newEffect.resistantId = effect.get("resistantId")
+        newEffect.immuneId = effect.get("immuneId")
+        newEffect.abilityId = effect.get("abilityId")
+        newEffect.abilityAdj = effect.get("abilityAdj")
+        newEffect.skillId = effect.get("skillId")
+        newEffect.skillAdj = effect.get("skillAdj")
+        newEffect.rollAdvantage = effect.get("rollAdvantage")
+        newEffect.rollDisadvantage = effect.get("rollDisadvantage")
+        newEffect.rollType = effect.get("rollType")
+        newEffect.requirements = effect.get("requirements")
+        return newEffect
+
+    @classmethod
+    def addEffect(cls, effect: FeatEffect) -> bool:
+        try:
+            db.session.add(effect)
+            db.session.commit()
+            return True
+        except Exception as e:
+            Logger.error(e)
+            return False
+    
+    @classmethod
+    def addFeatToClass(cls, featId: str, classId: str) -> bool:
+        try:
+            newFeat = ClassFeat()
+            newFeat.featId = featId
+            newFeat.classId = classId
+            db.session.add(newFeat)
+            db.session.commit()
+            return True
+        except Exception as e:
+            Logger.error(e)
+            return False
+    
+    @classmethod
+    def addFeatToCharacter(cls, featId: str, characterId: str) -> bool:
+        try:
+            newFeat = CharacterFeat()
+            newFeat.featId = featId
+            newFeat.characterId = characterId
+            db.session.add(newFeat)
+            db.session.commit()
+            return True
+        except Exception as e:
+            Logger.error(e)
+            return False
+    
+    @classmethod
+    def addFeatToRace(cls, featId: str, raceId: str) -> bool:
+        try:
+            newFeat = RaceFeat()
+            newFeat.featId = featId
+            newFeat.raceId = raceId
+            db.session.add(newFeat)
+            db.session.commit()
+            return True
+        except Exception as e:
+            Logger.error(e)
+            return False
+    
+    @classmethod
+    def removeFeatFromRace(cls, featId: str, raceId: str) -> bool:
+        try:
+            feat = cls.raceFeatQuery.filter_by(featId=featId, raceId=raceId).first()
+            db.session.delete(feat)
+            db.session.commit()
+            return True
+        except Exception as e:
+            Logger.error(e)
+            return False
+    
+    @classmethod
+    def removeFeatFromClass(cls, featId: str, classId: str) -> bool:
+        try:
+            feat = cls.classFeatQuery.filter_by(featId=featId, classId=classId).first()
+            db.session.delete(feat)
+            db.session.commit()
+            return True
+        except Exception as e:
+            Logger.error(e)
+            return False
+        
+    @classmethod
+    def removeFeatFromCharacter(cls, featId: str, characterId: str) -> bool:
+        try:
+            feat = cls.characterFeatQuery.filter_by(featId=featId, characterId=characterId).first()
+            db.session.delete(feat)
+            db.session.commit()
+            return True
+        except Exception as e:
+            Logger.error(e)
+            return False
 
     @classmethod
     def delete(cls, id: str):
@@ -25,7 +128,36 @@ class FeatService:
 
     @classmethod
     def getRacialFeats(cls) -> list[Feat]:
-        return list(map(lambda x: cls.get(x.featId), cls.raceFeatQuery.all()))
+        return list(
+            map(
+                lambda x: cls.get(x.featId),
+                cls.raceFeatQuery.all()
+            )
+        )
+    
+    @classmethod
+    def deleteFeatEffect(cls, effectId: str) -> bool:
+        try:
+            effect = cls.getFeatEffect(effectId)
+            db.session.delete(effect)
+            db.session.commit()
+            return True
+        except Exception as e:
+            Logger.error(e)
+            return False
+    
+    @classmethod
+    def getFeatEffect(cls, featEffectId: str) -> FeatEffect:
+        return cls.query.filter_by(id=featEffectId).first()
+
+    @classmethod
+    def getClassFeats(cls) -> list[Feat]:
+        return list(
+            map(
+                lambda x: cls.get(x.featId),
+                cls.query.filter(ClassFeat.classId.isnot(None)).all(),
+            )
+        )
 
     @classmethod
     def getRacialFeatsFor(cls, id: str):

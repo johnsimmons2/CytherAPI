@@ -27,7 +27,6 @@ class CreatureTypes(Enum):
 
 class EquipSlots(Enum):
     HEAD = 'head'
-    CHEST = 'chest'
     SHOULDERS = 'shoulders'
     HANDS = 'hands'
     LEGS = 'legs'

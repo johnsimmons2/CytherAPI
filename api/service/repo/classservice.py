@@ -9,8 +9,6 @@ from api.service.ext_dbservice import Ext_ContentService
 
 class ClassService:
     query = Query(Class, db.session)
-    querySubclass = Query(Subclass, db.session)
-    queryCSC = Query(ClassSubclasses, db.session)
     queryCT = Query(ClassTable, db.session)
 
     @classmethod
@@ -164,10 +162,6 @@ class ClassService:
         Dnd5eAPIService.getClasses()
 
     @classmethod
-    def getSubclassByName(cls, subclassName: str):
-        return cls.querySubclass.filter(Subclass.name.ilike(f"%{subclassName}%")).first()
-
-    @classmethod
     def getByName(cls, className: str):
         return cls.query.filter(Class.name.ilike(f"%{className}%")).first()
 
@@ -179,7 +173,3 @@ class ClassService:
     @classmethod
     def get(cls, id: str):
         return cls.query.filter_by(id=id).first()
-
-    @classmethod
-    def getSubclass(cls, id: str):
-        return cls.querySubclass.filter_by(id=id).first()

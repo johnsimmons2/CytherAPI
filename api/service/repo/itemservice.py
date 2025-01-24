@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Query
-from api.model.character import Inventory, SharedInventory
-from api.model.items import Items
+from api.model.character import Inventory, InventoryShared
+from api.model.item import Item
 from api.model.itemtypeenums import ItemBaseType, ItemCondition, ItemMaterial, ItemProperty, ItemRarity, ItemWeight
 from api.service.dbservice import UserService
 from api.service.repo.characterservice import CharacterService
@@ -9,9 +9,9 @@ import api.service.jwthelper as jwth
 
 
 class ItemsService:
-    query = Query(Items, db.session)
+    query = Query(Item, db.session)
     inventoryQuery = Query(Inventory, db.session)
-    sharedInventoryQuery = Query(SharedInventory, db.session)
+    sharedInventoryQuery = Query(InventoryShared, db.session)
     
     @classmethod
     def translateType(cls, itemType: int):
@@ -52,7 +52,7 @@ class ItemsService:
         }
     
     @classmethod
-    def getItemTranslated(cls, item: Items, shared: bool = False, admin: bool = False):
+    def getItemTranslated(cls, item: Item, shared: bool = False, admin: bool = False):
         return {
             'id': item.id,
             'name': item.name,
@@ -70,11 +70,11 @@ class ItemsService:
         
         items_with_relations = (
             cls.query
-                .outerjoin(SharedInventory, SharedInventory.inventoryId == Items.id)
-                .outerjoin(Inventory, Inventory.itemId == Items.id)
+                .outerjoin(InventoryShared, InventoryShared.inventoryId == Item.id)
+                .outerjoin(Inventory, Inventory.itemId == Item.id)
                 .add_columns(
                     Inventory.characterId.label("characterId"),
-                    SharedInventory.userId.label("sharedUserId"),
+                    InventoryShared.userId.label("sharedUserId"),
                 )
                 .all()
         )
@@ -125,11 +125,11 @@ class ItemsService:
     
     @classmethod
     def createItem(cls, name: str, description: str, itemType: int):
-        foundItem = cls.query.filter(db.func.lower(Items.name) == name.lower()).filter(Items.type == itemType).first()
+        foundItem = cls.query.filter(db.func.lower(Item.name) == name.lower()).filter(Item.type == itemType).first()
         if foundItem is not None:
             return foundItem, False
         
-        item = Items()
+        item = Item()
         item.name = name
         item.description = description
         item.type = itemType
@@ -138,7 +138,7 @@ class ItemsService:
         return item, True
     
     @classmethod
-    def delete(cls, item: Items):
+    def delete(cls, item: Item):
         db.session.delete(item)
         db.session.commit()
         
@@ -151,11 +151,11 @@ class ItemsService:
         
         items_with_relations = (
             cls.query
-                .outerjoin(SharedInventory, SharedInventory.inventoryId == Items.id)
-                .outerjoin(Inventory, Inventory.itemId == Items.id)
+                .outerjoin(InventoryShared, InventoryShared.inventoryId == Item.id)
+                .outerjoin(Inventory, Inventory.itemId == Item.id)
                 .add_columns(
                     Inventory.characterId.label("characterId"),
-                    SharedInventory.userId.label("sharedUserId"),
+                    InventoryShared.userId.label("sharedUserId"),
                 )
                 .all()
         )
@@ -176,7 +176,7 @@ class ItemsService:
         if inv is None:
             return False
         
-        shared = SharedInventory()
+        shared = InventoryShared()
         shared.inventoryId = inventoryId
         shared.userId = userId
         
@@ -187,7 +187,7 @@ class ItemsService:
         return True
     
     @classmethod
-    def update(cls, item: Items):
+    def update(cls, item: Item):
         db.session.merge(item)
         db.session.commit()
         return item
