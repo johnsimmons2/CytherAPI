@@ -1,6 +1,7 @@
 # Abilities and ability score calculations perchance
 
 
+from api.model.character import Character, CharacterLanguage
 from api.model.language import Language
 from extensions import db
 from sqlalchemy.orm import Query
@@ -87,10 +88,63 @@ class LanguageService:
         db.session.commit()
     
     @classmethod
-    def get(cls, langId):
+    def get(cls, langId: str):
         return db.session.query(Language).filter(Language.id == langId).first()
     
     @classmethod
     def getAll(cls):
         return db.session.query(Language).all()
     
+    @classmethod
+    def getLanguageByName(cls, name: str):
+        return db.session.query(Language).filter_by(name=name).first()
+    
+    @classmethod
+    def createLanguage(cls, language: Language):
+        if cls.getLanguageByName(language.name) is not None:
+            return None
+        
+        newLanguage = Language()
+        newLanguage.name = language.name
+        newLanguage.description = language.description
+        
+        db.session.add(newLanguage)
+        db.session.commit()
+        
+        return newLanguage
+    
+    @classmethod
+    def deleteLanguage(cls, langId: str):
+        lang = cls.get(langId)
+        if lang is not None:
+            db.session.delete(lang)
+            db.session.commit()
+            return lang
+        return None
+    
+    @classmethod
+    def addLanguageToCharacter(cls, langId: str, charId: str):
+        lang = cls.get(langId)
+        if lang is not None:
+            char = db.session.query(Character).filter(Character.id == charId).first()
+            if char is not None:
+                charLang = CharacterLanguage()
+                charLang.characterId = charId
+                charLang.languageId = langId
+                db.session.add(charLang)
+                db.session.commit()
+                return lang
+        return None
+    
+    @classmethod
+    def removeLanguageFromCharacter(cls, langId: str, charId: str):
+        lang = cls.get(langId)
+        if lang is not None:
+            char = db.session.query(Character).filter(Character.id == charId).first()
+            if char is not None:
+                charLang = db.session.query(CharacterLanguage).filter(CharacterLanguage.characterId == charId, CharacterLanguage.languageId == langId).first()
+                if charLang is not None:
+                    db.session.delete(charLang)
+                    db.session.commit()
+                    return lang
+        return None

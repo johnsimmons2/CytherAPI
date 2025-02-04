@@ -92,7 +92,7 @@ def getClassFeats():
     
 @feats.route("/feats/class/<id>", methods = ['GET'])
 @isAuthorized
-def getClasslFeatsForClass(id: str):
+def getClassFeatsForClass(id: str):
     feats = FeatService.getClassFeats(id)
     if feats is not None:
         if len(feats) > 0:
@@ -115,7 +115,7 @@ def addRacialFeatToRace(featId: str, raceId: str):
 
 @feats.route("/feats/<featId>/class/<classId>", methods = ['POST'])
 @isAdmin
-def addClasslFeatForClass(featId: str, classId: str):
+def addClassFeatToClass(featId: str, classId: str):
     added = FeatService.addFeatToClass(featId, classId)
     if added:
         return OK(added)
@@ -124,7 +124,7 @@ def addClasslFeatForClass(featId: str, classId: str):
     
 @feats.route("/feats/<featId>/character/<characterId>", methods = ['POST'])
 @isAdmin
-def addFeatForCharacter(featId: str, characterId: str):
+def addFeatToCharacter(featId: str, characterId: str):
     added = FeatService.addFeatToCharacter(featId, characterId)
     if added:
         return OK(added)
@@ -134,7 +134,7 @@ def addFeatForCharacter(featId: str, characterId: str):
 # REMOVE
 @feats.route("/feats/<featId>/race/<raceId>", methods = ['DELETE'])
 @isAdmin
-def addRacialFeatToRace(featId: str, raceId: str):
+def deleteRacialFeatFromRace(featId: str, raceId: str):
     added = FeatService.removeFeatFromRace(featId, raceId)
     if added:
         return OK(added)
@@ -143,7 +143,7 @@ def addRacialFeatToRace(featId: str, raceId: str):
 
 @feats.route("/feats/<featId>/class/<classId>", methods = ['DELETE'])
 @isAdmin
-def addClasslFeatForClass(featId: str, classId: str):
+def deleteClassFeatForClass(featId: str, classId: str):
     added = FeatService.removeFeatFromClass(featId, classId)
     if added:
         return OK(added)
@@ -152,7 +152,7 @@ def addClasslFeatForClass(featId: str, classId: str):
     
 @feats.route("/feats/<featId>/character/<characterId>", methods = ['DELETE'])
 @isAdmin
-def addFeatForCharacter(featId: str, characterId: str):
+def deleteFeatFromCharacter(featId: str, characterId: str):
     added = FeatService.removeFeatFromCharacter(featId, characterId)
     if added:
         return OK(added)
@@ -167,7 +167,7 @@ def addFeatEffect(id: str):
     requestJson = request.get_json()
     effect = FeatService.getFeatEffectFromJSON(requestJson)
     effect.featId = id
-    added = FeatService.addEffect(effect)
+    added = FeatService.addFeatEffect(effect)
     if added:
         return OK(added)
     else:
@@ -175,7 +175,7 @@ def addFeatEffect(id: str):
 
 @feats.route("/feats/effects/<effectId>", methods = ['DELETE'])
 @isAdmin
-def addFeatEffect(effectId: str):
+def deleteFeatEffect(effectId: str):
     success = FeatService.deleteFeatEffect(effectId)
     if success:
         return OK(success)

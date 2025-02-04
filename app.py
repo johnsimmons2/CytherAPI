@@ -5,24 +5,26 @@ from flask.wrappers import Response
 from sqlalchemy.engine import URL
 from api.loghandler.logger import Logger
 from api.service.config import config, set_config_path
-from api.controller.usercontroller import users
-from api.controller.charactercontroller import characters
-from api.controller.racecontroller import race as rbp
-from api.controller.featcontroller import feats as fbp
-from api.controller.classcontroller import classes as cbp
-from api.controller.skillscontroller import skills as skbp
-from api.controller.spellcontroller import spells as sbp
-from api.controller.authcontroller import auth as abp
-from api.controller.socketcontroller import wsocket as wsbp
-from api.controller.campaigncontroller import campaigns as cabp
-from api.controller.ext_contentcontroller import ext_content as extbp
-from api.controller.itemscontroller import items as ibp
-from api.controller.notecontroller import notes as nbp
+from api.controller.usercontroller import users as users_blueprint
+from api.controller.charactercontroller import characters as characters_blueprint
+from api.controller.racecontroller import race as race_blueprint
+from api.controller.featcontroller import feats as feats_blueprint
+from api.controller.classcontroller import classes as classes_blueprint
+from api.controller.skillscontroller import skills as skills_blueprint
+from api.controller.spellcontroller import spells as spells_blueprint
+from api.controller.authcontroller import auth as auth_blueprint
+from api.controller.socketcontroller import wsocket as wsocket_blueprint
+from api.controller.campaigncontroller import campaigns as campaigns_blueprint
+from api.controller.ext_contentcontroller import ext_content as ext_content_blueprint
+from api.controller.itemscontroller import items as items_blueprint
+from api.controller.notecontroller import notes as notes_blueprint
 from api.service.dbservice import RoleService, UserService
 from api.service.repo.abilityservice import AbilityService
 from api.service.repo.conditionsservice import ConditionsService
 from api.service.repo.damagetypesservice import DamageTypeService
+from api.service.repo.featservice import FeatService
 from api.service.repo.languageservice import LanguageService
+from api.service.repo.noteservice import NoteService
 from api.service.repo.skillservice import SkillService
 from api.service.repo.statsheetservice import StatsheetService
 from api.model import *
@@ -40,19 +42,19 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Register routes
 
-app.register_blueprint(users, url_prefix='/api')
-app.register_blueprint(abp, url_prefix='/api')
-app.register_blueprint(characters, url_prefix='/api')
-app.register_blueprint(cbp, url_prefix='/api')
-app.register_blueprint(rbp, url_prefix='/api')
-app.register_blueprint(fbp, url_prefix='/api')
-app.register_blueprint(cabp, url_prefix='/api')
-app.register_blueprint(sbp, url_prefix='/api')
-app.register_blueprint(skbp, url_prefix='/api')
-app.register_blueprint(wsbp, url_prefix='/api')
-app.register_blueprint(nbp, url_prefix='/api')
-app.register_blueprint(ibp, url_prefix='/api')
-app.register_blueprint(extbp, url_prefix='/api')
+app.register_blueprint(users_blueprint, url_prefix='/api')
+app.register_blueprint(characters_blueprint, url_prefix='/api')
+app.register_blueprint(race_blueprint, url_prefix='/api')
+app.register_blueprint(feats_blueprint, url_prefix='/api')
+app.register_blueprint(classes_blueprint, url_prefix='/api')
+app.register_blueprint(skills_blueprint, url_prefix='/api')
+app.register_blueprint(spells_blueprint, url_prefix='/api')
+app.register_blueprint(auth_blueprint, url_prefix='/api')
+app.register_blueprint(wsocket_blueprint, url_prefix='/api')
+app.register_blueprint(campaigns_blueprint, url_prefix='/api')
+app.register_blueprint(ext_content_blueprint, url_prefix='/api')
+app.register_blueprint(items_blueprint, url_prefix='/api')
+app.register_blueprint(notes_blueprint, url_prefix='/api')
 
 monkey.patch_all()
 
@@ -126,6 +128,7 @@ with app.app_context():
     SkillService.init_default_skills()
     ConditionsService.init_default_conditions()
     LanguageService.init_default_languages()
+    NoteService.init_default_tags()
     db.session.commit()
     
 if __name__ == "__main__":

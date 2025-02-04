@@ -13,7 +13,7 @@ import api.service.jwthelper as jwth
 users = Blueprint('users', __name__)
 
 @users.route("/users", methods = ['GET'])
-@isAdmin
+@isAuthorized
 def get():
     return OK(UserService.getAll())
 

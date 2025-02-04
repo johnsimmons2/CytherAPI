@@ -1,3 +1,4 @@
+from api.model.character import CharacterCondition
 from api.model.condition import Condition, ConditionEffect
 from extensions import db
 from sqlalchemy.orm import Query
@@ -288,3 +289,147 @@ class ConditionsService:
     def get(cls, id: str):
         return db.session.query(Condition).filter(Condition.id == id).first()
     
+    @classmethod
+    def getByName(cls, name: str):
+        return db.session.query(Condition).filter(Condition.name == name).first()
+    
+    @classmethod
+    def createCondition(cls, condition: Condition) -> Condition | None:
+        if cls.getByName(condition.name) is not None:
+            return None
+        
+        newCondition = Condition()
+        newCondition.name = condition.name
+        newCondition.description = condition.description
+        newCondition.source = condition.source
+        
+        db.session.add(newCondition)
+        db.session.commit()
+        
+        return newCondition
+    
+    @classmethod
+    def addEffectToCondition(cls, effect: ConditionEffect) -> ConditionEffect | None:
+        existing_condition = cls.get(effect.conditionId)
+        
+        if not existing_condition:
+            return None
+        
+        newEffect = ConditionEffect()
+        newEffect.conditionId = effect.conditionId
+        newEffect.description = effect.description
+        newEffect.vulnerableId = effect.vulnerableId
+        newEffect.resistantId = effect.resistantId
+        newEffect.immuneId = effect.immuneId
+        newEffect.abilityId = effect.abilityId
+        newEffect.abilityAdj = effect.abilityAdj
+        newEffect.skillId = effect.skillId
+        newEffect.skillAdj = effect.skillAdj
+        newEffect.rollAdvantage = effect.rollAdvantage
+        newEffect.rollDisadvantage = effect.rollDisadvantage
+        newEffect.rollType = effect.rollType
+        
+        db.session.add(newEffect)
+        db.session.commit()
+        return newEffect
+    
+    @classmethod
+    def removeEffectFrom(cls, conditionId: str, effectId: str) -> bool:
+        effect = db.session.query(ConditionEffect).filter(
+            ConditionEffect.conditionId == conditionId,
+            ConditionEffect.id == effectId
+        ).first()
+        
+        if not effect:
+            return False
+        
+        db.session.delete(effect)
+        db.session.commit()
+        return True
+    
+    @classmethod
+    def addConditionToCharacter(cls, conditionId: str, characterId: str, source: str, duration: str, stacks: int) -> bool:
+        newCondition = CharacterCondition()
+        newCondition.characterId = characterId
+        newCondition.conditionId = conditionId
+        newCondition.source = source
+        newCondition.duration = duration
+        newCondition.stacks = stacks
+        
+        db.session.add(newCondition)
+        db.session.commit()
+        return True
+    
+    @classmethod
+    def updateCondition(cls, condition: Condition) -> Condition | None:
+        existing_condition = cls.get(condition.id)
+        
+        if not existing_condition:
+            return None
+        
+        existing_condition.name = condition.name
+        existing_condition.description = condition.description
+        existing_condition.source = condition.source
+        
+        db.session.commit()
+        return existing_condition
+    
+    @classmethod
+    def updateConditionEffect(cls, conditionEffect: ConditionEffect) -> ConditionEffect | None:
+        existing_effect = db.session.query(ConditionEffect).filter(
+            ConditionEffect.conditionId == conditionEffect.conditionId,
+            ConditionEffect.id == conditionEffect.id
+        ).first()
+        
+        if not existing_effect:
+            return None
+        
+        existing_effect.description = conditionEffect.description
+        existing_effect.vulnerableId = conditionEffect.vulnerableId
+        existing_effect.resistantId = conditionEffect.resistantId
+        existing_effect.immuneId = conditionEffect.immuneId
+        existing_effect.abilityId = conditionEffect.abilityId
+        existing_effect.abilityAdj = conditionEffect.abilityAdj
+        existing_effect.skillId = conditionEffect.skillId
+        existing_effect.skillAdj = conditionEffect.skillAdj
+        existing_effect.rollAdvantage = conditionEffect.rollAdvantage
+        existing_effect.rollDisadvantage = conditionEffect.rollDisadvantage
+        existing_effect.rollType = conditionEffect.rollType
+        
+        db.session.commit()
+        return existing_effect
+    
+    @classmethod
+    def updateCharacterCondition(cls, characterCondition: CharacterCondition) -> CharacterCondition | None:
+        existing_condition = db.session.query(CharacterCondition).filter(
+            CharacterCondition.characterId == characterCondition.characterId,
+            CharacterCondition.conditionId == characterCondition.conditionId
+        ).first()
+        
+        if not existing_condition:
+            return None
+        
+        existing_condition.source = characterCondition.source
+        existing_condition.duration = characterCondition.duration
+        existing_condition.stacks = characterCondition.stacks
+        
+        db.session.commit()
+        return existing_condition
+    
+    @classmethod
+    def removeConditionFromCharacter(cls, conditionId: str, characterId: str):
+        condition = db.session.query(CharacterCondition).filter(
+            CharacterCondition.characterId == characterId,
+            CharacterCondition.conditionId == conditionId
+        ).first()
+        
+        if not condition:
+            return False
+        
+        db.session.delete(condition)
+        db.session.commit()
+        return True
+    
+    @classmethod
+    def getConditionsForCharacter(cls, characterId: str) -> Query:
+        return db.session.query(CharacterCondition).filter(CharacterCondition.characterId == characterId)

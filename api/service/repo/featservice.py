@@ -31,7 +31,7 @@ class FeatService:
         return newEffect
 
     @classmethod
-    def addEffect(cls, effect: FeatEffect) -> bool:
+    def addFeatEffect(cls, effect: FeatEffect) -> bool:
         try:
             db.session.add(effect)
             db.session.commit()

@@ -124,18 +124,13 @@ class ItemsService:
         return cls.getItemTranslated(item, shared, admin)
     
     @classmethod
-    def createItem(cls, name: str, description: str, itemType: int):
-        foundItem = cls.query.filter(db.func.lower(Item.name) == name.lower()).filter(Item.type == itemType).first()
-        if foundItem is not None:
-            return foundItem, False
+    def createItem(cls, item: Item):
+        if cls.query.filter_by(name=item.name).first() is not None:
+            return None
         
-        item = Item()
-        item.name = name
-        item.description = description
-        item.type = itemType
         db.session.add(item)
         db.session.commit()
-        return item, True
+        return item
     
     @classmethod
     def delete(cls, item: Item):
@@ -171,18 +166,29 @@ class ItemsService:
         return result
     
     @classmethod
-    def shareInventoryItem(cls, inventoryId: str, userId):
+    def shareInventoryItem(cls, inventoryId: str, userId: str):
         inv: Inventory = cls.inventoryQuery.filter_by(id=inventoryId).first()
         if inv is None:
             return False
+        shared: InventoryShared = cls.sharedInventoryQuery.filter_by(inventoryId=inventoryId, userId=userId).first()
+        if shared is not None:
+            return False
         
-        shared = InventoryShared()
-        shared.inventoryId = inventoryId
-        shared.userId = userId
-        
-        inv.shared_with.append(shared)
+        newShared = InventoryShared()
+        newShared.inventoryId = inventoryId
+        newShared.sharedUserId = userId
         
         db.session.add(shared)
+        db.session.commit()
+        return True
+    
+    @classmethod
+    def unShareInventoryItem(cls, inventoryId: str, userId: str):
+        shared: InventoryShared = cls.sharedInventoryQuery.filter_by(inventoryId=inventoryId, userId=userId).first()
+        if shared is None:
+            return False
+        
+        db.session.delete(shared)
         db.session.commit()
         return True
     

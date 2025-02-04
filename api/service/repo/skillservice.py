@@ -126,3 +126,5 @@ class SkillService:
     @classmethod
     def getAll(cls):
         return cls.query.all()
+    
+    

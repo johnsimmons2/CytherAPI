@@ -11,16 +11,16 @@ class Tag(db.Model):
     __tablename__ = 'tag'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     userId: int = db.Column(Integer, ForeignKey('user.id'), nullable=True)
+    
     name: str = db.Column(String(255))
     description: str = db.Column(Text)
     
     created: str = db.Column(DateTime)
     updated: str = db.Column(DateTime)
     active: bool = db.Column(Boolean)
-    
-    creator = relationship("User", backref="tags_created")
-    shared_users: Mapped[List[User]] = relationship("User", secondary="tag_shared_users", backref="shared_tags", cascade="all,delete")
-    
+    color: str = db.Column(String)
+    icon: str = db.Column(String)
+
 @dataclass
 class Note(db.Model):
     __tablename__ = 'note'
@@ -58,7 +58,9 @@ class NoteSharedDirectories(db.Model):
     __tablename__ = 'note_shared_directories'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     userId: int = db.Column(Integer, ForeignKey('user.id'))
+    sharedWithId: int = db.Column(Integer, ForeignKey('user.id'))
     directory: str = db.Column(String(255))
+    shareDate: str = db.Column(DateTime)
 
 @dataclass
 class NoteSharedUsers(db.Model):
@@ -66,13 +68,16 @@ class NoteSharedUsers(db.Model):
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     noteId: int = db.Column(Integer, ForeignKey('note.id'))
     userId: int = db.Column(Integer, ForeignKey('user.id'))
+    shareDate: str = db.Column(DateTime)
     
 @dataclass
 class TagSharedUsers(db.Model):
     __tablename__ = 'tag_shared_users'
     id: int = db.Column(Integer, primary_key=True, autoincrement=True)
     tagId: int = db.Column(Integer, ForeignKey('tag.id'))
-    userId: int = db.Column(Integer, ForeignKey('user.id'))    
+    userId: int = db.Column(Integer, ForeignKey('user.id'))
+    sharedWithId: int = db.Column(Integer, ForeignKey('user.id'))    
+    shareDate: str = db.Column(DateTime)
 
 @dataclass
 class NoteTags(db.Model):
