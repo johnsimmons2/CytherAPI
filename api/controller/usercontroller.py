@@ -13,22 +13,30 @@ import api.service.jwthelper as jwth
 users = Blueprint('users', __name__)
 
 @users.route("/users", methods = ['GET'])
-@isAdmin
 @isAuthorized
 def get():
     return OK(UserService.getAll())
 
 @users.route("/users/<id>", methods = ['GET'])
+@isAuthorized
 def getUser(id: str):
-    user = UserService.get(id)
-    if user:
-        return OK(user)
+    if id is None or id == '':
+        return BadRequest('No user ID was provided.')
+    if id.isdigit():
+        user = UserService.get(id)
+        if user:
+            return OK(user)
+        else:
+            return NotFound('No user was found with that ID.')
     else:
-        return BadRequest('No user was found with that ID.')
+        user = UserService.getByUsername(id)
+        if user:
+            return OK(user)
+        else:
+            return NotFound('No user was found with that username.')
 
 @users.route("/users/<id>", methods = ['DELETE'])
 @isAdmin
-@isAuthorized
 def deleteUser(id: str):
     if id is None or id == '' or id == '1':
         return BadRequest("Cannot delete user with given ID of {id}".format(id=id))
@@ -38,34 +46,35 @@ def deleteUser(id: str):
     else:
         return BadRequest('No user was found with that ID.')
 
-@users.route("/users/<id>", methods = ['POST'])
+@users.route("/users/<id>", methods = ['PATCH'])
 @isAuthorized
 def updateUser(id: str):
     if request.get_json() is None:
         return BadRequest('No user was provided or the input was invalid.')
-    user = User(**json.loads(request.data))
+    user = User.from_dict(json.loads(request.data))
+    Logger.debug(f"Updating user: {user.id} - {user.username}")
     UserService.updateUser(id, user)
     return OK()
 
 @users.route("/users/<id>/roles", methods = ['GET'])
-@isAuthorized
 @isAdmin
 def getUserRoles(id: str):
-    result = UserService.get(id).roles
+    result = UserService.get(id)
     if result is None:
         return BadRequest('No user was found with that ID.')
-    return OK(result)
+    return OK(result.roles)
 
-@users.route("/users/<id>/roles", methods = ['POST'])
-@isAuthorized
+@users.route("/users/<id>/roles", methods = ['PATCH'])
 @isAdmin
 def updateUserRoles(id: str):
     if request.get_json() is None:
         return BadRequest('No user was provided or the input was invalid.')
-    roles = [role for role in json.loads(request.data)]
+
+    rolesJson = json.loads(request.data)
+    if not 'roles' in rolesJson:
+        return BadRequest('No roles were provided.')
+    roles = rolesJson['roles']
     userRoles: list[Role] = []
-    if not isinstance(roles, list):
-        return BadRequest('Roles must be a list of roles.')
     for role in roles:
         if isinstance(role, int):
             userRoles.append(RoleService.get(role))

@@ -1,11 +1,11 @@
 from flask import Blueprint, request
 from api.controller import OK, BadRequest, Posted
 from api.controller.controller import Conflict, NotFound, UnAuthorized
-from api.decorator.auth.authdecorators import isAuthorized
+from api.decorator.auth.authdecorators import isAuthorized, isAdmin
 from api.loghandler.logger import Logger
 from api.model.user import User
 from api.service.dbservice import AuthService, UserService
-from api.service.jwthelper import create_token as jwth
+import api.service.jwthelper as jwth
 import json
 import os
 
@@ -40,11 +40,30 @@ def passwordResetEmail():
         return BadRequest('Email could not be sent.')
     return OK("Password reset email sent.")
 
+@auth.route("/auth/reset-password/manual-request", methods = ['POST'])
+def passwordResetManual():
+    if request.get_json() is None:
+        return BadRequest('No user was provided or the input was invalid.')
+    data = request.get_json()
+    old = data.get('old_secret')
+    new = data.get('new_secret')
+    userId = data.get('id')
+    
+    if old is None or new is None or userId is None:
+        return NotFound('Request supplied was invalid.')
+
+    try:
+        AuthService.resetPasswordManual(userId, old, new)
+    except:
+        return UnAuthorized("Token was invalid or expired")
+
+    return OK("Gotcha!")
+
 @auth.route("/auth/reset-password", methods = ['POST'])
 def passwordReset():
-    resetToken = request.args.get('resetToken')
+    resetToken = request.args.get('t')
     if resetToken == None:
-        return BadRequest('Query param ?resetToken was not provided.')
+        return BadRequest('Query param ?t (reset token) was not provided.')
 
     if request.get_json() is None:
         return BadRequest('No user was provided or the input was invalid.')
@@ -56,10 +75,49 @@ def passwordReset():
 
     try:
         AuthService.resetPassword(foundUser, resetToken, user.password)
-    except:
+    except Exception as e:
+        Logger.error(e)
         return UnAuthorized("Token was invalid or expired")
 
-    return OK("Gotcha!")
+    return OK("Password reset succeeded")
+
+@isAdmin
+@auth.route("/auth/force-password-reset", methods = ['POST'])
+def adminPasswordReset():
+    if request.get_json() is None:
+        return BadRequest('No user was provided or the input was invalid.')
+    user = User(**json.loads(request.data))
+    foundUser = UserService.getByUsername(user.username)
+
+    if foundUser is None or foundUser.email == None:
+        return NotFound('No user was found with that email.')
+
+    try:
+        AuthService.adminResetPassword(foundUser, user.password)
+    except:
+        return BadRequest("Something went wrong!")
+
+    return OK("Admin has forced the password to reset")
+
+@isAdmin
+@auth.route("/auth/get-password-reset-link", methods = ['POST'])
+def adminPasswordResetLink():
+    if request.get_json() is None:
+        return BadRequest('No user was provided or the input was invalid.')
+
+    user = User.from_dict(json.loads(request.data))
+    foundUser = UserService.getByUsername(user.username)
+
+    if foundUser is None:
+        return NotFound('No user was found.')
+
+    link = ''
+    try:
+        link = AuthService.createResetLink(foundUser)
+    except:
+        return BadRequest("Something went wrong!")
+    return OK(link)
+
 
 @auth.route("/auth/token", methods = ['POST'])
 def authenticate():
@@ -76,6 +134,17 @@ def authenticate():
         return OK(dict({"token": str(authenticated)}))
     else:
         return UnAuthorized("Authentication failed")
+    
+@auth.route("/auth/token/refresh", methods = ['POST'])
+def refresh():
+    token = request.args.get('t')
+    if token is None:
+        return BadRequest('No token was provided.')
+    refreshed = AuthService.refresh_token(token)
+    if refreshed is not None:
+        return OK(dict({"token": str(refreshed)}))
+    else:
+        return UnAuthorized("Token could not be refreshed.")
 
 @auth.route("/auth/register", methods = ['POST'])
 def post():
@@ -89,6 +158,7 @@ def post():
     if user.username is None and user.email is None:
         return BadRequest('No username or email was provided.')
 
+    Logger.debug(f"{user.username} {user.email} {UserService.exists(user)}")
     if UserService.exists(user):
         return Conflict('User already exists with that email or username.')
 

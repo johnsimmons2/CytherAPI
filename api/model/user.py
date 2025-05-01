@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+from typing import List
 from sqlalchemy import ForeignKey, Integer, String, DateTime, Boolean
-from sqlalchemy.orm import relationship
-from . import db
+from sqlalchemy.orm import relationship, Mapped
+from api.model.character import Character
+from extensions import db
 
 
 @dataclass
@@ -36,7 +38,15 @@ class User(db.Model):
     salt = db.Column(String)
 
     characters = db.relationship('Character', secondary='user_characters', backref='user')
-    roles = db.relationship('Role', secondary='user_role', backref='user')
+    roles: Mapped[List[Role]] = db.relationship('Role', secondary='user_role', backref='user')
+    
+    @classmethod
+    def from_dict(cls, data):
+        if 'roles' in data:
+            data['roles'] = [Role(**role) for role in data['roles']]
+        if 'characters' in data:
+            data['characters'] = [Character.from_dict(**character) for character in data['characters']]
+        return cls(**data)
 
 @dataclass
 class UserRequest(db.Model):
@@ -44,3 +54,12 @@ class UserRequest(db.Model):
     userId: int = db.Column(Integer, ForeignKey('user.id'))
     expiry: DateTime = db.Column(DateTime)
     content: str = db.Column(String)
+
+
+@dataclass
+class UserSetting(db.Model):
+    id: int = db.Column(Integer, primary_key=True, autoincrement=True)
+    userId: int = db.Column(Integer, ForeignKey('user.id'))
+    name: str = db.Column(String)
+    value: str = db.Column(String)
+    toggle: bool = db.Column(Boolean)

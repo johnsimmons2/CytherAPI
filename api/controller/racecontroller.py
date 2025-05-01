@@ -3,8 +3,9 @@ from flask import Blueprint, request
 from api.controller.controller import OK, BadRequest, NotFound, ServerError, validRequestDataFor, Posted
 
 from api.decorator.auth.authdecorators import isAdmin, isAuthorized
-from api.model.classes import Feat, Race
-from api.service.dbservice import FeatService
+from api.model.race import Race
+from api.model.feat import Feat
+from api.service.repo.featservice import FeatService
 from api.service.repo.raceservice import RaceService
 
 

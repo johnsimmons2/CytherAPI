@@ -10,11 +10,11 @@ def isAdmin(func):
 		try:
 			token = decode_token(get_access_token())
 			if token is None:
-				return BadRequest("The token is not valid.")
+				return UnAuthorized("The token is not valid.")
 			user = UserService.getByUsername(token["username"])
 
 			if user is None:
-				return BadRequest("The user does not exist.")
+				return UnAuthorized("The user does not exist.")
 
 			for role in user.roles:
 				if role.level == 0:
@@ -32,11 +32,11 @@ def isPlayer(func):
         try:
             token = decode_token(get_access_token())
             if token is None:
-                return BadRequest("The token is not valid.")
+                return UnAuthorized("The token is not valid.")
             user = UserService.getByUsername(token["username"])
 
             if user is None:
-                return BadRequest("The user does not exist.")
+                return UnAuthorized("The user does not exist.")
 
             for role in user.roles:
                 if role.level <= 1:

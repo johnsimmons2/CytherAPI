@@ -1,49 +1,64 @@
 import os
 from dotenv import load_dotenv
 from flask import Flask, request
-from flask.wrappers import Request, Response
-from flask_cors import CORS
-from flask_mail import Mail, Message
+from flask.wrappers import Response
 from sqlalchemy.engine import URL
-from api.controller import campaigncontroller
 from api.loghandler.logger import Logger
-from api.loghandler.formatted import FormattedLogHandler
 from api.service.config import config, set_config_path
-from api.controller.usercontroller import users
-from api.controller.charactercontroller import characters
-from api.controller.racecontroller import race
-from api.controller.featcontroller import feats
-from api.controller.classcontroller import classes
-from api.controller.skillscontroller import skills
-from api.controller.spellcontroller import spells
-from api.controller.authcontroller import auth
-from api.controller.ext_contentcontroller import ext_content
-from api.model.user import User
+from api.controller.usercontroller import users as users_blueprint
+from api.controller.charactercontroller import characters as characters_blueprint
+from api.controller.racecontroller import race as race_blueprint
+from api.controller.featcontroller import feats as feats_blueprint
+from api.controller.classcontroller import classes as classes_blueprint
+from api.controller.skillscontroller import skills as skills_blueprint
+from api.controller.spellcontroller import spells as spells_blueprint
+from api.controller.authcontroller import auth as auth_blueprint
+from api.controller.socketcontroller import wsocket as wsocket_blueprint
+from api.controller.campaigncontroller import campaigns as campaigns_blueprint
+from api.controller.ext_contentcontroller import ext_content as ext_content_blueprint
+from api.controller.itemscontroller import items as items_blueprint
+from api.controller.notecontroller import notes as notes_blueprint
 from api.service.dbservice import RoleService, UserService
+from api.service.repo.abilityservice import AbilityService
+from api.service.repo.conditionsservice import ConditionsService
+from api.service.repo.damagetypesservice import DamageTypeService
+from api.service.repo.featservice import FeatService
+from api.service.repo.languageservice import LanguageService
+from api.service.repo.noteservice import NoteService
 from api.service.repo.skillservice import SkillService
 from api.service.repo.statsheetservice import StatsheetService
-from api.model import db
+from api.model import *
+from extensions import db, cors, socketio, mail
+from gevent import monkey
+from gevent.pywsgi import WSGIServer
+from geventwebsocket.handler import WebSocketHandler
 
-
+# app.py
 load_dotenv()
 # Setup logger
-Logger.config_set_handler(FormattedLogHandler().set_color_dates(True))
 
 # Create app
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["https://cyther.online", "http://127.0.0.1", "http://localhost:8100"]}}, supports_credentials=True)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Register routes
 
-app.register_blueprint(users, url_prefix='/api')
-app.register_blueprint(auth, url_prefix='/api')
-app.register_blueprint(characters, url_prefix='/api')
-app.register_blueprint(campaigncontroller.campaigns, url_prefix='/api')
-app.register_blueprint(race, url_prefix='/api')
-app.register_blueprint(feats, url_prefix='/api')
-app.register_blueprint(classes, url_prefix='/api')
-app.register_blueprint(skills, url_prefix='/api')
-app.register_blueprint(spells, url_prefix='/api')
+app.register_blueprint(users_blueprint, url_prefix='/api')
+app.register_blueprint(characters_blueprint, url_prefix='/api')
+app.register_blueprint(race_blueprint, url_prefix='/api')
+app.register_blueprint(feats_blueprint, url_prefix='/api')
+app.register_blueprint(classes_blueprint, url_prefix='/api')
+app.register_blueprint(skills_blueprint, url_prefix='/api')
+app.register_blueprint(spells_blueprint, url_prefix='/api')
+app.register_blueprint(auth_blueprint, url_prefix='/api')
+app.register_blueprint(wsocket_blueprint, url_prefix='/api')
+app.register_blueprint(campaigns_blueprint, url_prefix='/api')
+app.register_blueprint(ext_content_blueprint, url_prefix='/api')
+app.register_blueprint(items_blueprint, url_prefix='/api')
+app.register_blueprint(notes_blueprint, url_prefix='/api')
+
+monkey.patch_all()
+
+# Register external content
 
 # Register mailtrap client
 app.config['MAIL_SERVER'] = 'live.smtp.mailtrap.io'
@@ -54,25 +69,14 @@ app.config['MAIL_USERNAME'] = 'api'
 app.config['MAIL_PASSWORD'] = os.getenv('MAILTRAP_TOKEN')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('ADMIN_EMAIL')
 
-Logger.debug("Mailtrap: " + str(os.getenv('ADMIN_EMAIL')) + " " + str(os.getenv('MAILTRAP_TOKEN')))
-
-mail = Mail(app)
-
-# Register external content
-app.register_blueprint(ext_content, url_prefix='/api')
-
-# Register db
 set_config_path(os.path.dirname(os.path.realpath(__file__)))
 
-
 dburl = os.getenv('DATABASE_URL')
-envPort = os.getenv('PORT')
+envPort = int(os.getenv('PORT', 5000))
 apiVersion = os.getenv('API_VERSION')
 
 Logger.debug("API Version: " + str(apiVersion))
-
-if envPort is None:
-  envPort = 5000
+Logger.debug("Environment Port: " + str(envPort))
 
 if dburl is not None:
 
@@ -91,8 +95,16 @@ else:
                   cfg['database'])
   app.config['SQLALCHEMY_DATABASE_URI'] = uri
   Logger.debug("Using local database URL: " + str(uri))
-
+  
+mail.init_app(app)
+Logger.debug("Mailtrap: " + str(os.getenv('ADMIN_EMAIL')) + " " + str(os.getenv('MAILTRAP_TOKEN')))
+socketio.init_app(app)
+Logger.debug("SocketIO configured")
+cors.init_app(app)
+Logger.debug("CORS Configured")
 db.init_app(app)
+Logger.debug("Database configured")
+
 
 # Logging middleware
 @app.before_request
@@ -109,16 +121,22 @@ def after_request(response: Response):
 
 
 with app.app_context():
-    db.create_all()
-    db.session.commit()
     RoleService.initRoles()
     UserService.initUsers()
-    SkillService.initBaseSkills()
-    StatsheetService.initSavingThrows()
-
+    AbilityService.init_default_abilities()
+    DamageTypeService.init_default_damage_types()
+    SkillService.init_default_skills()
+    ConditionsService.init_default_conditions()
+    LanguageService.init_default_languages()
+    NoteService.init_default_tags()
+    db.session.commit()
+    
 if __name__ == "__main__":
     Logger.debug("Starting Cyther-API on port " + str(envPort))
 
     if os.getenv('ENVIRONMENT') != 'production':
         Logger.warn("Cyther-API is running on [" + str(os.getenv('ENVIRONMENT')) + "]")
-    app.run(host='0.0.0.0', port=envPort, load_dotenv=True)
+    
+    # socketio.run(app, host='0.0.0.0', port=envPort)
+    http_server = WSGIServer(('0.0.0.0', envPort), app, handler_class=WebSocketHandler)
+    http_server.serve_forever()

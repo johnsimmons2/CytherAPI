@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 from api.loghandler.logger import Logger
-from api.model import db
 from sqlalchemy.orm import Query
 from api.model.classes import Class, Feat, Race, Subclass
 from api.service.dbservice import FeatService
 from api.service.repo.raceservice import RaceService
 from api.service.repo.classservice import ClassService
+from extensions import db
 import requests
 
 

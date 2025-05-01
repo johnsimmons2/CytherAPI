@@ -24,8 +24,9 @@ def has_role_level(level: int) -> bool:
 def create_token(user: User) -> str:
     return jwt.encode({
         'username': user.username,
+        'userId': user.id,
         'email': user.email,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=120),
         'roles': [{'roleName': role.roleName, 'level': role.level} for role in user.roles]
         }, os.getenv('JWT_SECRET'), "HS256")
 
@@ -43,7 +44,6 @@ def verify_token(token: str) -> bool:
         jwtsecret = os.getenv('JWT_SECRET')
         result = jwt.decode(token, jwtsecret, "HS256")
         expired = datetime.datetime.utcnow() > datetime.datetime.utcfromtimestamp(result['exp'])
-        print(result)
         if expired:
             Logger.warn('JWT Token is expired')
             return False
@@ -53,18 +53,33 @@ def verify_token(token: str) -> bool:
     return True
 
 def get_access_token():
-    if request.headers and 'Authorization' in request.headers.keys():
-        data = request.headers['Authorization']
-    elif request.form and 'Authorization' in request.form.keys():
-        data = request.form['Authorization']
-    elif request.data and request.data['Authorization']:
-        data = json.loads(data)
-        data = request.data['Authorization']
-    else:
-        Logger.error('Authorization was not supplied.')
-        return None
     try:
-        return data.split(' ')[1]
-    except Exception:
-        Logger.error('Token was not supplied in "Bearer TOKEN" format.')
-    return None
+        # Check Authorization header
+        if 'Authorization' in request.headers:
+            data = request.headers['Authorization']
+        # Check form data
+        elif 'Authorization' in request.form:
+            data = request.form['Authorization']
+        # Check raw data (JSON payload)
+        elif request.data:
+            try:
+                parsed_data = json.loads(request.data)
+                data = parsed_data.get('Authorization')
+            except json.JSONDecodeError:
+                Logger.error('Request data is not valid JSON.')
+                return None
+        else:
+            Logger.error('Authorization was not supplied.')
+            return None
+
+        # Extract token from "Bearer TOKEN" format
+        if data and 'Bearer' in data:
+            return data.split(' ')[1]
+        elif data:
+            return data
+
+        Logger.error('Authorization was supplied but is invalid.')
+        return None
+    except Exception as e:
+        Logger.error(f'Error extracting access token: {str(e)}')
+        return None
