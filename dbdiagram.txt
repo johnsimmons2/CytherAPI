@@ -1,0 +1,377 @@
+Table campaign {
+  id int [pk]
+  name varchar
+  description text
+  active boolean
+  created datetime
+  updated datetime
+}
+
+Table campaign_users {
+  id int [pk]
+  campaign_id int [ref: > campaign.id]
+  user_id int
+  active boolean
+}
+
+Table campaign_characters {
+  id int [pk]
+  campaign_id int [ref: > campaign.id]
+  character_id int [ref: > character.id]
+  active boolean
+}
+
+Table character {
+  id int [pk]
+  statsheet_id int [ref: > statsheet.id]
+  race_id int [ref: > race.id]
+  user_id int
+  isnpc boolean
+  age int
+  alignment varchar
+  description text
+  backstory text
+  appearance text
+  created datetime
+  updated datetime
+}
+
+Table character_class {
+  id int [pk]
+  character_id int [ref: > character.id]
+  class_id int [ref: > class.id]
+  subclass_id int [ref: > class.id]
+  level int
+  xp int
+  used_hit_dice int
+}
+
+Table character_relationship {
+  id int [pk]
+  character_id int [ref: > character.id]
+  other_character_id int [ref: > character.id]
+  allies boolean
+  enemies boolean
+}
+
+Table character_condition {
+  id int [pk]
+  character_id int [ref: > character.id]
+  condition_id int [ref: > condition.id]
+  duration varchar
+  source varchar
+  stacks int
+}
+
+Table character_feat {
+  id int [pk]
+  character_id int [ref: > character.id]
+  feat_id int [ref: > feat.id]
+}
+
+Table language {
+  id int [pk]
+  name varchar
+}
+
+Table character_language {
+  id int [pk]
+  character_id int [ref: > character.id]
+  language_id int [ref: > language.id]
+}
+
+Table item {
+  id int [pk]
+  name varchar
+  description varchar
+}
+
+Table inventory {
+  id int [pk]
+  character_id int [ref: > character.id]
+  item_id int [ref: > item.id]
+  quantity int
+  equipped boolean
+  equip_slot varchar
+  attuned boolean
+  updated datetime
+}
+
+Table inventory_shared {
+  id int [pk]
+  inventory_id int [ref: > inventory.id]
+  shared_user_id int
+}
+
+Table note {
+  id int [pk]
+  user_id int
+  character_id int [ref: > character.id]
+  campaign_id int [ref: > campaign.id]
+  name varchar
+  description text
+  directory varchar
+  active boolean
+  created datetime
+  updated datetime
+}
+
+Table note_shared_users {
+  id int [pk]
+  note_id int [ref: > note.id]
+  user_id int
+  share_date datetime
+}
+
+Table note_shared_directories {
+  id int [pk]
+  user_id int
+  directory varchar
+  shared_with_id int
+  share_date datetime
+}
+
+Table note_tags {
+  id int [pk]
+  note_id int [ref: > note.id]
+  tag_id int [ref: > tag.id]
+}
+
+Table tag {
+  id int [pk]
+  name varchar
+  description text
+  color varchar
+  icon varchar
+  active boolean
+  created datetime
+  updated datetime
+}
+
+Table tag_shared_users {
+  id int [pk]
+  tag_id int [ref: > tag.id]
+  user_id int
+  shared_with_id int
+  share_date datetime
+}
+
+Table class {
+  id int [pk]
+  name varchar
+  description text
+  hit_dice varchar
+  is_primary boolean
+  primary_class_id int [ref: > class.id]
+  primary_ability_id int [ref: > ability.id]
+}
+
+Table class_feat {
+  id int [pk]
+  class_id int [ref: > class.id]
+  feat_id int [ref: > feat.id]
+}
+
+Table class_table {
+  id int [pk]
+  class_id int [ref: > class.id]
+  resource_id int
+  equip_type_id int
+  feat_id int
+  level int
+  spell_slot_level int
+  spell_slot_quantity int
+  resource_quantity int
+  requirements text
+}
+
+Table class_resource {
+  id int [pk]
+  name varchar
+  description text
+}
+
+Table race {
+  id int [pk]
+  name varchar
+  size varchar
+  type varchar
+  description text
+  walk_speed int
+  swim_speed int
+  fly_speed int
+  climb_speed int
+  burrow_speed int
+}
+
+Table race_feat {
+  id int [pk]
+  race_id int [ref: > race.id]
+  feat_id int [ref: > feat.id]
+}
+
+Table race_language {
+  id int [pk]
+  race_id int [ref: > race.id]
+  language_id int [ref: > language.id]
+}
+
+Table feat {
+  id int [pk]
+  name varchar
+  description text
+  requirements text
+}
+
+Table feat_effect {
+  id int [pk]
+  feat_id int [ref: > feat.id]
+  condition_id int
+  damage_type_id int
+  ability_id int
+  ability_adj int
+  skill_id int
+  skill_adj int
+  roll_type varchar
+  roll_advantage boolean
+  roll_disadvantage boolean
+}
+
+Table condition {
+  id int [pk]
+  name varchar
+  description varchar
+  source varchar
+}
+
+Table condition_effect {
+  id int [pk]
+  condition_id int [ref: > condition.id]
+  ability_id int
+  skill_id int
+  ability_adj int
+  skill_adj int
+  roll_type varchar
+  roll_advantage boolean
+  roll_disadvantage boolean
+  immune_id int
+  resistant_id int
+  vulnerable_id int
+}
+
+Table ability {
+  id int [pk]
+  name varchar
+  abbreviation varchar
+  description text
+  min int
+  max int
+}
+
+Table skill {
+  id int [pk]
+  name varchar
+  description text
+  ability_id int [ref: > ability.id]
+}
+
+Table damage_type {
+  id int [pk]
+  name varchar
+  description varchar
+  icon varchar
+}
+
+Table statsheet {
+  id int [pk]
+  health int
+  max_health int
+  temp_health int
+  armor_class int
+  initiative int
+  exhaustion int
+  observation int
+  walk_speed int
+  fly_speed int
+  swim_speed int
+  burrow_speed int
+  climb_speed int
+  updated datetime
+}
+
+Table statsheet_ability {
+  id int [pk]
+  statsheet_id int [ref: > statsheet.id]
+  ability_id int [ref: > ability.id]
+  value int
+  adjustment int
+}
+
+Table statsheet_savingthrow {
+  id int [pk]
+  statsheet_id int [ref: > statsheet.id]
+  ability_id int [ref: > ability.id]
+  advantage boolean
+  source varchar
+  updated datetime
+}
+
+Table statsheet_proficiency {
+  id int [pk]
+  statsheet_id int [ref: > statsheet.id]
+  skill_id int
+  adjustment int
+  custom varchar
+  source varchar
+  updated datetime
+}
+
+Table statsheet_damage_type {
+  id int [pk]
+  statsheet_id int [ref: > statsheet.id]
+  damage_type_id int [ref: > damage_type.id]
+  vulnerable boolean
+  resistant boolean
+  immune boolean
+  source varchar
+  updated datetime
+}
+
+Table spell {
+  id int [pk]
+  ability_id int [ref: > ability.id]
+  name varchar
+  casting_time varchar
+  description text
+  duration varchar
+  school varchar
+  range varchar
+  level int
+  melee boolean
+  verbal boolean
+  somatic boolean
+  material boolean
+  ritual boolean
+  concentration boolean
+}
+
+Table spellbook {
+  id int [pk]
+  statsheet_id int [ref: > statsheet.id]
+  spell_casting_ability_id int [ref: > ability.id]
+  spellslot1 int
+  spellslot9 int
+  cantrips int
+  spells_known int
+  spells_prepared int
+  actions int
+  bonus_actions int
+}
+
+Table spellbook_spell {
+  id int [pk]
+  spellbook_id int [ref: > spellbook.id]
+  spell_id int [ref: > spell.id]
+  spell_level int
+  is_cantrip boolean
+}

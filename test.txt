@@ -1,0 +1,5 @@
+**Literature mini-survey**: emergent communication (Jaderberg 2019, Lee 2022), prompt optimisation (Liu 2023), evolutionary RL controllers.  
+
+https://arxiv.org/html/2501.00226v1?utm_source=chatgpt.com
+
+https://proceedings.neurips.cc/paper_files/paper/2024/file/631bb9434d718ea309af82566347d607-Paper-Conference.pdf?utm_source=chatgpt.com
