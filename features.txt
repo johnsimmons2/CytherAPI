@@ -1,0 +1,17 @@
+- notes and note taking
+    - organize notes, categorize, tag, share, etc.
+    - link to other notes in a note
+    - menu of relevant / known / met characters to add to notes
+    - quick menu for recent notes or same-dir notes
+    - way to go up a dir quickly
+    - allow for a world map of some kind
+        - like a point and click adventure style with small paragraph descriptions
+
+- make a character quickly
+often when we start a campaign or need to track chars, we want them fast.
+I should be able to make the character quickly and fill in details as needed until
+the character is "ready." Buttons to roll HP and other things.
+    - players can try to add homebrew or custom spells/cantrips/feats/etc but admin must accept
+
+- points for interacting
+    - a bank per campaign, 

@@ -80,22 +80,22 @@ Logger.debug("Environment Port: " + str(envPort))
 
 if dburl is not None:
 
-  dburl = dburl.replace("postgres://", "postgresql://", 1)
-  Logger.debug("Using database URL: " + str(dburl))
+    dburl = dburl.replace("postgres://", "postgresql://", 1)
+    Logger.debug("Using database URL: " + str(dburl))
 
 
-  app.config['SQLALCHEMY_DATABASE_URI'] = dburl
+    app.config['SQLALCHEMY_DATABASE_URI'] = dburl
 else:
-  cfg = config()
-  uri = URL.create(cfg['drivername'],
-                  cfg['username'],
-                  cfg['password'],
-                  cfg['host'],
-                  cfg['port'],
-                  cfg['database'])
-  app.config['SQLALCHEMY_DATABASE_URI'] = uri
-  Logger.debug("Using local database URL: " + str(uri))
-  
+    cfg = config()
+    uri = URL.create(cfg['drivername'],
+            cfg['username'],
+            cfg['password'],
+            cfg['host'],
+            cfg['port'],
+            cfg['database'])
+    app.config['SQLALCHEMY_DATABASE_URI'] = uri
+    Logger.debug("Using local database URL: " + str(uri))
+
 mail.init_app(app)
 Logger.debug("Mailtrap: " + str(os.getenv('ADMIN_EMAIL')) + " " + str(os.getenv('MAILTRAP_TOKEN')))
 socketio.init_app(app)
@@ -114,9 +114,9 @@ def before_request():
 @app.after_request
 def after_request(response: Response):
     if 200 <= response.status_code < 300:
-      Logger.debug(f"Response: {response.status_code}")
+        Logger.debug(f"Response: {response.status_code}")
     else:
-      Logger.error(f"Response: {response.status_code}\t{response.response}")
+        Logger.error(f"Response: {response.status_code}\t{response.response}")
     return response
 
 

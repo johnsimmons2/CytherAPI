@@ -1,20 +1,23 @@
+import os
 import json
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import Group
 from django.db import IntegrityError
 from django.http import JsonResponse
-from django.http.request import HttpRequest
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import permission_classes
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from users.models.user import User
 from cytherapi.utils import OK, BAD_REQUEST, UNAUTHORIZED
+from django.core.mail import send_mail
+from users.serializers import UserSerializer
 
-
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def login(request: Request) -> JsonResponse:
+def login_view(request: Request) -> JsonResponse:
     data = request.data
     username = data.get('username')
     password = data.get('password')
@@ -28,20 +31,26 @@ def login(request: Request) -> JsonResponse:
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def logout(request: Request) -> JsonResponse:
+def logout_view(request: Request) -> JsonResponse:
     if not request.user.is_authenticated:
         return BAD_REQUEST("You are not logged in.")
 
     logout(request)
     return OK("Logout successful.")
-    
+
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def register(request: Request) -> JsonResponse:
+def register_view(request: Request) -> JsonResponse:
     data = request.data
+    # Required
+    email = data.get('email')
     username = data.get('username')
     password = data.get('password')
-    email = data.get('email')
+    
+    # Optional
+    first_name = data.get('first_name', '')
+    last_name = data.get('last_name', '')
     
     if not username or not password:
         return BAD_REQUEST("Username and password are required.")
@@ -56,7 +65,28 @@ def register(request: Request) -> JsonResponse:
         user = User.objects.create_user(username=username, email=email, password=password)
         group = Group.objects.get(name="Guest")
         user.groups.add(group)
+        if first_name:
+            user.first_name = first_name
+        if last_name:
+            user.last_name = last_name
+        user.save()
+        login(request, user)
+        send_mail(
+            'Welcome to Cyther.online',
+            f'Hello {user.username},\n\nThank you for registering on Cyther. We hope you enjoy your experience.\n\nBest regards,\nCyther Team',
+            os.getenv('EMAIL_FROM_DISPLAY', 'admin@cyther.online'),
+            [user.email]
+        )
+        return OK("User registered successfully.", username=user.username)
     except IntegrityError:
         return BAD_REQUEST("Username already exists.")
     
-    return OK("User registered successfully.", username=user.username)
+
+@ensure_csrf_cookie
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def auth_check(request: Request) -> JsonResponse:
+    groups = list(request.user.groups.values_list('name', flat=True))
+    user_data = UserSerializer(request.user).data
+    
+    return OK("success", user_groups=groups, user=user_data)

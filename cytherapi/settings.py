@@ -10,33 +10,38 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-$1@nnml2)b))=!o2so^(ejy5*e1td(%u@@u&5poi3ca3940@s-'
+SECRET_KEY = os.getenv('AUTH_SECRET', 'default-secret-key-1234567890abcdefghijklmnopqrstuvwxyz')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost'
+]
 
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-    ]
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # Application definition
@@ -47,12 +52,31 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
+    'drf_spectacular',
     'rest_framework',
-    'rest_framework.authtoken',
     'users.apps.UsersConfig',
+    'notes.apps.NotesConfig',
+    'corsheaders',
 ]
 
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'CytherAPI-doc',
+    'DESCRIPTION': 'API Documentation for CytherAPI',
+    'VERSION': os.getenv('API_VERSION', '0.0.0'),
+    'SERVE_INCLUDE_SCHEMA': False, #?
+    # 'COMPONENT_SPLIT_REQUEST': True,
+    # 'PREPROCESSING_HOOKS': [
+    #     'drf_spectacular.hooks.preprocess_schema_for_hyperlinked_fields',
+    # ],
+    # 'POSTPROCESSING_HOOKS': [
+    #     'drf_spectacular.hooks.postprocess_schema_for_hyperlinked_fields',
+    # ],
+    # 'ENUM_NAME_OVERRIDES': ???
+}
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # TOP
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -61,6 +85,50 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 1 week
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# These are TRUE and NONE for HTTPS/SSL. Change to FALSE and LAX for HTTP.
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'None'
+# CSRF_COOKIE_HTTPONLY = False
+
+
+_CURRENT_ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+if _CURRENT_ENVIRONMENT == 'development' or _CURRENT_ENVIRONMENT == 'local':
+    cookie_domain_override = '.cyther.local'
+    ALLOWED_HOSTS.append('api.cyther.local')
+    trusted_allowed_origins = [
+        # "http://localhost:8100", # HTTP
+        "https://cyther.local:8100" # HTTPS 
+    ]
+else:
+    cookie_domain_override = '.cyther.online'
+    ALLOWED_HOSTS.append('api.cyther.online')
+    trusted_allowed_origins = [
+        "https://cyther.online" # HTTPS 
+    ]
+    
+SESSION_COOKIE_DOMAIN = cookie_domain_override
+CSRF_COOKIE_DOMAIN = cookie_domain_override
+
+CORS_ALLOWED_ORIGINS = trusted_allowed_origins
+CSRF_TRUSTED_ORIGINS = trusted_allowed_origins
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('MAILTRAP_SMTP_HOST', 'sandbox.smtp.mailtrap.io')
+EMAIL_HOST_USER = os.getenv('MAILTRAP_SMTP_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('MAILTRAP_SMTP_HOST_PASSWORD', '')
+EMAIL_PORT = int(os.getenv('MAILTRAP_SMTP_HOST_PORT', 2525))
+EMAIL_FROM_EMAIL_ADDRESS = os.getenv('MAILTRAP_DEFAULT_FROM_EMAIL', 'admin@cyther.online')
+EMAIL_FROM_EMAIL = f"{os.getenv('MAILTRAP_DEFAULT_FROM_EMAIL_NAME', 'Admin')} <{EMAIL_FROM_EMAIL_ADDRESS}>"
+EMAIL_USE_TLS = True
+os.environ['EMAIL_FROM_DISPLAY'] = EMAIL_FROM_EMAIL_ADDRESS
+
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'cytherapi.urls'
 

@@ -9,14 +9,16 @@ def RESPONSE(status: int, msg: str = None, err: bool | Any = False, **additional
     :param msg: message to return
     :param err: defaults to "True", can override with object or detail message.
     '''
-    response = {'status': status, 'message': msg}
+    response = {'message': msg}
     if err is not False:
         response['error'] = err if isinstance(err, bool) else str(err)
         
     if additional_data:
         for key, value in additional_data.items():
             response[key] = value
-    return JsonResponse(response, status=status)
+    response = JsonResponse(response, status=status)
+    response.status_code = status
+    return response
 
 def OK(msg='OK', **kwargs):
     return RESPONSE(200, msg, **kwargs)

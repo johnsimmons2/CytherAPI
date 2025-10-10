@@ -1,13 +1,10 @@
-from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission, IsAdminUser
-from rest_framework.response import Response
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated, BasePermission, IsAdminUser, AllowAny
 from users.serializers import UserSerializer
 from users.models import User
-from rest_framework.decorators import action
 from rest_framework.request import Request
-from rest_framework.authtoken.models import Token
-from django.utils import timezone
-from django.contrib.auth import authenticate
+from rest_framework.response import Response
+from rest_framework.decorators import action
 
 
 class IsSelfOrAdmin(BasePermission):
@@ -19,8 +16,24 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     
     def get_permissions(self):
-        if self.action in ['list', 'destroy']:
-            return [IsAdminUser()]
-        elif self.action in ['retrieve', 'update', 'partial_update']:
-            return [IsSelfOrAdmin()]
-        return [IsAuthenticated()]
+        action_perms = {
+            'account_available': [AllowAny()],
+            
+            # Generated
+            'list': [IsAdminUser()],
+            'destroy': [IsAdminUser()],
+            'retrieve': [IsSelfOrAdmin()],
+            'update': [IsSelfOrAdmin()],
+            'partial_update': [IsSelfOrAdmin()],
+        }
+
+        return action_perms.get(self.action, [IsAuthenticated()])
+    
+    @action(detail=False, methods=['get'])
+    def account_available(self, request: Request) -> Response:
+        username = request.query_params.get('u', '').strip()
+        email = request.query_params.get('e', '').strip()
+        
+        username_available = not User.objects.filter(username=username).exists()
+        email_available = not User.objects.filter(email=email).exists()
+        return Response({"available": username_available and email_available}, status=200)

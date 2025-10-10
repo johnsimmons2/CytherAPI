@@ -1,0 +1,80 @@
+// Status
+{
+    "action": "status"
+}
+
+// List Rooms
+{
+    "action": "list"
+}
+
+// Create a Room
+{
+    "action": "create",
+    "data": {
+        "name": "Room Tester",
+        "lock_turns": true,
+        "max_hp": 40
+    }
+}
+
+// Delete a Room
+{
+    "action": "delete",
+    "data": 1
+}
+
+// Join a Room
+{
+    "action": "join",
+    "data": 1
+}
+
+// Start
+{
+    "action": "start",
+    "data": [pk1, pk2]
+}
+
+// Pass
+{
+    "action": "pass"
+}
+
+// Leave a Room
+{
+    "action": "leave",
+    "data": 1
+}
+
+// Pass turn
+{
+    "action": "pass"
+}
+
+// Update health
+{
+    "action": "health",
+    "data": {
+        "owner": pk3,
+        "deltas": [
+            {
+                "target": pk1,
+                "delta": -5,
+                "commander": true
+            },
+            {
+                "target": pk1,
+                "delta": -4
+            },
+            {
+                "target": pk2,
+                "delta": -1
+            },
+            {
+                "target": pk3,
+                "delta": 10
+            }
+        ]
+    }
+}
