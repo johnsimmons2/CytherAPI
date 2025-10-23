@@ -1,24 +1,30 @@
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from typing import Any
 
 
-def RESPONSE(status: int, msg: str = None, err: bool | Any = False, **additional_data) -> JsonResponse:
-    '''
-    generic response function.
+def RESPONSE(status: int, msg: str | None = None, err: Any = None, **extra) -> JsonResponse:
+    """
+    Generic JSON response.
     :param status: HTTP status code
     :param msg: message to return
-    :param err: defaults to "True", can override with object or detail message.
-    '''
-    response = {'message': msg}
-    if err is not False:
-        response['error'] = err if isinstance(err, bool) else str(err)
-        
-    if additional_data:
-        for key, value in additional_data.items():
-            response[key] = value
-    response = JsonResponse(response, status=status)
-    response.status_code = status
-    return response
+    :param err: if truthy, include an 'error' field (bool or stringified object)
+    """
+    # No body for 204/304
+    if status in (204, 304):
+        return HttpResponse(status=status)
+
+    body: dict[str, Any] = {}
+    if msg is not None:
+        body["message"] = msg
+
+    if err:  # only include when truthy
+        body["error"] = err if isinstance(err, bool) else str(err)
+
+    if extra is not None:
+        extra_data: dict[str, Any] = {}
+        extra_data.update(extra)
+        body["data"] = extra_data
+    return JsonResponse(body, status=status)
 
 def OK(msg='OK', **kwargs):
     return RESPONSE(200, msg, **kwargs)

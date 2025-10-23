@@ -1,347 +1,241 @@
-# wsfuncs.py
+# cytherapi/ws/wsfuncs.py (only key parts shown)
 import json
-from enum import Enum
-from .wstypes import WSAction, WSDamage, WSMessage, WSPlayer, WSRoom, WSRoomOccupant, WSType
+from typing import Any, Dict, List, Optional
 from . import wsstate as state
-
-
-async def disconnect(scope, manual = True):
-    user = scope['cyther.user']
-    player: WSPlayer = scope['cyther.player']
-    try:
-        pinger = scope['cyther.pinger']
-        pinger.cancel()
-    except:
-        pass
-    
-    try:
-        if player.room_id:
-            room: WSRoom = state.ROOMS.get(player.room_id, None)
-            if room:
-                if manual:
-                    if room.owner == player.user_id:
-                        # close room
-                        await close_room(scope, room.room_id)
-                    else:
-                        await leave_room(scope, room.room_id)
-                else:
-                    # If we did not try to quit on purpose, update our status.
-                    await update_room(scope, room.room_id)
-        
-    except:
-        pass
-    state.ACTIVE.pop(getattr(user, "pk", None), None)
-
-async def route_message(scope, message: WSMessage):
-    player: WSPlayer = scope['cyther.player']
-    send = scope['cyther.send']
-    if message.action == WSAction.LIST:
-        await send(list_rooms(scope))
-    elif message.action == WSAction.LIST_PLAYERS:
-        room_id = message.data
-        await send(list_in_room(scope, room_id))
-    elif message.action == WSAction.CREATE:
-        rdata = message.data
-        
-        # If a user is already an owner, they cannot make another room.
-        if player.room_id or player.owned_room:
-            await send(error_message(scope, "Already in a room!"))
-            return
-        
-        room = WSRoom(player.user_id, rdata['name'], rdata['lock_turns'], rdata['max_hp'])
-        await create_room(scope, room)
-    elif message.action == WSAction.DELETE:
-        room_id = message.data
-        if player.owned_room == room_id:
-            await close_room(scope, room_id)
-    elif message.action == WSAction.LEAVE:
-        room_id = message.data
-        await leave_room(scope, room_id)
-    elif message.action == WSAction.JOIN:
-        room_to_join = message.data
-        await join_room(scope, room_to_join)
-    elif message.action == WSAction.HEALTH:
-        damage_data = message.data.get("deltas", None)
-        damages: list[WSDamage] = []
-        owner_pk = message.data.get("owner")
-        
-        sessions = state.ACTIVE.get(owner_pk, None)
-        
-        for s in sessions:
-            owner: WSPlayer = s.player
-            if owner is None:
-                return
-            owner_room = owner.room_id
-            owner_id = owner.user_id
-            for d in damage_data:
-                room: WSRoom = state.ROOMS.get(owner_room)
-                if not room or d['target'] not in [o.player.user_id for o in room.players]:
-                    print("Can't target a player not in the current room!")
-                    continue
-                damages.append(WSDamage(owner_pk, d["target"], d["delta"], d.get("commander", False)))
-            
-            continue
-    
-        # process the damages
-        for d in damages:
-            sessions = state.ACTIVE.get(d.target)
-            for occupant in room.players:
-                if occupant.player.user_id == d.target:
-                    p = occupant.player
-                    p.health += d.delta
-                    if d.commander and d.delta < 0:
-                        prev = p.commander_damage.get(d.owner, 0)
-                        p.commander_damage[d.owner] = prev + (-d.delta)
-            
-        await update_players_in_room(scope, owner_room)
-    elif message.action == WSAction.START:
-        '''
-        Input looks like: 
-            data: [first player's user_id, 2nd player's user_id, etc...]
-        '''
-        order: list[int] = list(message.data or [])
-        room_id = player.room_id
-        room: WSRoom = state.ROOMS.get(room_id)
-        if not room:
-            return await send(error_message(scope, "No room to start."))
-
-        # Validate: every id in order must be in the room; allow subsets/ordering
-        room_uids = [o.player.user_id for o in room.players]
-        if not order or any(uid not in room_uids for uid in order):
-            return await send(error_message(scope, "Turn order invalid."))
-
-        room.turn_order = order
-        room.turn_index = 0
-        room.started = True
-
-        # Set active_turn on players
-        active_uid = order[0]
-        for o in room.players:
-            o.player.active_turn = (o.player.user_id == active_uid)
-
-        state.ROOMS[room_id] = room
-        await update_room(scope, room_id) 
-    elif message.action == WSAction.STATUS:
-        data = {
-            "player": player
-        }
-        await send(to_payload(scope, WSMessage(WSAction.INFO, data), WSType.SEND))
-    elif message.action == WSAction.PASS:
-        room_id = player.room_id
-        room: WSRoom = state.ROOMS.get(room_id)
-        if not room or not getattr(room, "started", False):
-            return await send(error_message(scope, "No active match."))
-
-        order = getattr(room, "turn_order", None)
-        if not order:
-            return await send(error_message(scope, "Turn order not set."))
-
-        current_uid = order[getattr(room, "turn_index", 0)]
-        if player.user_id != current_uid and player.user_id != room.owner:
-            return await send(error_message(scope, "Not your turn."))
-
-        room.turn_index = (getattr(room, "turn_index", 0) + 1) % len(order)
-        active_uid = order[room.turn_index]
-
-        for o in room.players:
-            o.player.active_turn = (o.player.user_id == active_uid)
-
-        state.ROOMS[room_id] = room
-        await update_room(scope, room_id)
-
-async def close_room(scope, room_id):
-    room: WSRoom = state.ROOMS.get(room_id, None)
-    send = scope['cyther.send']
-    
-    if not room:
-        return error_message(scope, "No room found to close.")
-    
-    for p in room.players:
-        p.player.room_id = None
-        p.player.owned_room = None
-        p.player.health = p.player.max_health
-        p.player.commander_damage = {}
-        
-        if p.player.room_id == room_id:
-            p.player.room_id = None
-        if p.player.owned_room == room_id:
-            p.player.owned_room = None
-        if p.player.user_id == scope['cyther.user_id']:
-            scope['cyther.player'] = p.player
-    
-    room.players = []
-    await update_room(scope, room_id)
-    
-    try:
-        state.ROOMS.pop(room_id)
-        await broadcast(scope, payload=list_rooms(scope))
-    except:
-        pass
-    
-    await send(to_payload(scope, WSMessage(WSAction.DELETE, room_id), WSType.SEND))
-
-async def update_players_in_room(scope, room_id):
-    '''
-    Updates the room for players in the room
-    '''
-    room: WSRoom = state.ROOMS.get(room_id, None)
-    updated_totals: list[WSRoomOccupant] = []
-    subs = []
-    for p in room.players:
-        op = state.ACTIVE.get(p.player.user_id, None)
-        if op == None:
-            p.online = False
-        else:
-            p.online = True
-            for ps in op:
-                subs.append(ps.send)
-                ps.player = p.player
-                
-        updated_totals.append(p)
-    
-    for sub in subs:
-        await sub(to_payload(scope, WSMessage(WSAction.LIST_PLAYERS, updated_totals), WSType.SEND))
-
-async def update_room(scope, room_id):
-    '''
-    Updates the room for ALL connected users
-    '''
-    room: WSRoom = state.ROOMS.get(room_id, None)
-    if not room:
-        return error_message(scope, "No room found to update.")
-    
-    await broadcast(scope, room, WSAction.ROOM_UPDATE)
-        
-async def broadcast(scope, msg_data=None, msg_action: WSAction=None, payload=None):
-    if msg_action is None and payload is None:
-        raise AssertionError("broadcast requires msg_action or payload")
-
-    dead = []
-    for uid, sessions in list(state.ACTIVE.items()):
-        for ps in list(sessions):  # ps is WSUser
-            try:
-                pl = payload or to_payload(scope, WSMessage(msg_action, msg_data), WSType.SEND)
-                await ps.send(pl)
-            except Exception:
-                dead.append((uid, ps))
-    for uid, ps in dead:
-        try:
-            state.ACTIVE[uid].remove(ps)
-        except ValueError:
-            pass
-        if not state.ACTIVE[uid]:
-            state.ACTIVE.pop(uid, None)
-    
-async def create_room(scope, room: WSRoom):
-    player: WSPlayer = scope['cyther.player']
-    id = state.CURRENT_ID
-    
-    room_occupant = WSRoomOccupant(player)
-    room_occupant.online = True
-
-    room.room_id = id
-    room.players = [room_occupant]
-    room.owner = player.user_id
-    player.room_id = room.room_id
-    player.owned_room = room.room_id
-    scope['cyther.player'] = player
-    state.ROOMS[id] = room
-    state.CURRENT_ID += 1
-    
-    await broadcast(scope, payload=list_rooms(scope))
-
-async def leave_room(scope, room_id):
-    player: WSPlayer = scope['cyther.player']
-    room: WSRoom = state.ROOMS.get(room_id, None)
-    send = scope['cyther.send']
-    
-    if not room or player.room_id != room_id:
-        return await send(error_message(scope, "Cannot leave room player is not in."))
-        
-    try:
-        room.remove_player(player.user_id)
-        player.room_id = None
-        scope['cyther.player'] = player
-    except:
-        print("User was not connected or joined.")
-    
-    state.ROOMS[room.room_id] = room
-    await update_room(scope, room.room_id)
-    
-    await send(to_payload(scope, WSMessage(WSAction.NOTIFY, f"Left {room.name}."), WSType.SEND))
-        
-async def join_room(scope, room_id):
-    player: WSPlayer = scope['cyther.player']
-    room: WSRoom = state.ROOMS.get(room_id, None)
-    send = scope['cyther.send']
-    
-    if not room or player.room_id or player.owned_room is not None:
-        return await send(error_message(scope, "Cannot join room player is already in or does not exist."))
-    
-    if room.started:
-        return await send(error_message(scope, "Cannot join room with a match in progress."))
-    
-    try: 
-        room.players.append(WSRoomOccupant(player))
-        player.room_id = room_id
-        scope['cyther.player'] = player
-        state.ROOMS[room_id] = room
-        await update_room(scope, room_id)
-    except:
-        import traceback
-        traceback.print_exc()
-    
-    await send(to_payload(scope, WSMessage(WSAction.NOTIFY, f"Joined {room.name}."), WSType.SEND))
-
-def list_in_room(scope, room_id):
-    '''
-    List all the global rooms in current state
-    '''
-    room: WSRoom = state.ROOMS.get(room_id, None)
-    if not room:
-        return to_payload(scope, WSMessage(WSAction.ERROR, 'Room was not found'), WSType.SEND)
-    
-    players = room.players
-    for p in players:
-        up = state.ACTIVE.get(p.player.user_id, None)
-        if up is None:
-            p.online = False
-        else:
-            p.online = True
-    
-    return to_payload(scope, WSMessage(WSAction.LIST_PLAYERS, players), WSType.SEND)
-
-def list_rooms(scope):
-    rooms = []
-    if len(state.ROOMS.items()) > 0:
-        for _,room in state.ROOMS.items():
-            rooms.append(room)
-    return to_payload(scope, WSMessage(WSAction.LIST, rooms), WSType.SEND)
-
-def to_payload(scope, message: WSMessage, type: WSType):
-    payload = {
-        "type": type.value
-    }
-    
-    if message.action == WSAction.BROADCAST:
-        payload['from'] = scope['cyther.user']
-    
-    payload['text'] = json.dumps(message, default=_ws_default_json)
-    return payload
-
-def error_message(scope, error_txt):
-    return to_payload(scope, WSMessage(WSAction.ERROR, error_txt), WSType.SEND)
+from .wstypes import (
+    WSAction, WSMessage, WSType, WSRoom, WSUser, WSDamage, WSPlayer
+)
 
 def _ws_default_json(o):
-    if isinstance(o, Enum):
-        return o.value
-    elif isinstance(o, WSMessage):
-        return {
-            "action": o.action.value,
-            "data": o.data
-        }
-    elif isinstance(o, (str, int, float)):
-        return o
-    if hasattr(o, "__dict__"):
-        return {k: v for k, v in o.__dict__.items() if not k.startswith("_")}
-    raise TypeError(f"Could not serialize: {type(o)}")
+    from .wstypes import json_default
+    return json_default(o)
+
+def to_payload(message: WSMessage, typ: WSType) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {"type": typ.value}
+    payload["text"] = json.dumps({"action": message.action.value, "data": message.data}, default=_ws_default_json)
+    return payload
+
+def error_message(msg: str) -> Dict[str, Any]:
+    return {
+        "type": WSType.SEND.value,
+        "text": json.dumps({"type": "error", "message": msg})
+    }
+
+def list_rooms() -> Dict[str, Any]:
+    rooms_public = [r.to_public() for r in state.ROOMS.values()]
+    online_room = 0
+    for r in state.ROOMS.values():
+        online_room += sum([1 if c.player.connected else 0 for c in r.players])
+    return {
+        "type": WSType.SEND.value,
+        "text": json.dumps({"action": WSAction.LIST_ROOMS.value, "rooms": rooms_public, "in_room": online_room, "online": len(state.ACTIVE.values())})
+    }
+
+async def _send_json(ws_user: WSUser, obj: Dict[str, Any]) -> None:
+    await ws_user.send({"type": WSType.SEND.value, "text": json.dumps(obj)})
+
+async def broadcast(obj: Dict[str, Any], recipients: List[WSUser]) -> None:
+    dead: List[WSUser] = []
+    for s in recipients:
+        try:
+            await _send_json(s, obj)
+        except Exception:
+            dead.append(s)
+    if dead:
+        # prune dead connections
+        for d in dead:
+            bucket = state.ACTIVE.get(d.user_id, [])
+            if d in bucket:
+                bucket.remove(d)
+            if not bucket:
+                state.ACTIVE.pop(d.user_id, None)
+
+# --- Message routing ----------------------------------------------------------
+async def route_message(scope, message: WSMessage):
+    print(f"I just got the message: {message.action}-> {message.data}")
+
+    action = message.action
+    if action == WSAction.LIST_ROOMS:
+        await scope["cyther.send"](list_rooms())
+
+    elif action == WSAction.CREATE_ROOM:
+        await create_room(scope, message.data.get("name") or "Room")
+
+    elif action == WSAction.JOIN_ROOM:
+        await join_room(scope, message.data.get("room_id"))
+    
+    elif action == WSAction.UPDATE_ROOM:
+        await update_rooms_for_all()
+
+    elif action == WSAction.LEAVE_ROOM:
+        await leave_room(scope, message.data.get("room_id"))
+
+    elif action == WSAction.CLOSE_ROOM:
+        await close_room(scope, message.data.get("room_id"))
+
+    elif action == WSAction.HEALTH:
+        await apply_health(scope, message.data)
+
+    elif action == WSAction.UPDATE_USER:
+        await update_user(scope, message.data)
+
+    elif action == WSAction.TURN_NEXT:
+        await turn_next(scope, message.data.get("room_id"))
+
+    elif action == WSAction.TURN_SET:
+        await turn_set(scope, message.data.get("room_id"), message.data.get("user_id"))
+
+    elif action == WSAction.DISCONNECT:
+        pass
+    else:
+        await scope["cyther.send"](error_message(f"Unknown action: {action.value}"))
+
+async def update_user(scope, player_data):
+    room_id = player_data.get('room_id')
+    room = state.ROOMS.get(room_id)
+
+    np = WSPlayer()
+    buckets = state.ACTIVE.get(player_data.get('id'))
+    for b in buckets:
+        if b.user_id == player_data.get('id'):
+            np._user = b.player._user
+            np.name = b.player.name
+            np.user_id = b.player.user_id
+            np.health = player_data.get('health')
+            np.max_health = player_data.get('max_health')
+            np.commander_damage = player_data.get('commander_damage')
+            np.room_id = player_data.get('room_id')
+            np.connected = player_data.get('connected')
+            np.image = player_data.get('image')
+            np.color = player_data.get('color')
+
+            b.player = np
+            break
+
+    if room:
+        for occ in room.players:
+            if occ.player.user_id == player_data.get('id'):
+                occ.player = np
+                break
+        await update_rooms_for_all()
+
+
+async def update_rooms_for_all(only_not_in_room=False):
+    recepients = []
+    for bucket in state.ACTIVE.values():
+        if bucket:
+            for user in bucket:
+                if only_not_in_room and user.player.room_id:
+                    continue
+                recepients.append(user)
+    
+    for r in recepients:
+        await r.send(list_rooms())
+
+async def update_players_in_room(room_id: str) -> None:
+    await update_rooms_for_all()
+    # room = state.ROOMS.get(room_id)
+    # if not room:
+    #     return
+    # payload = {"action": WSAction.LIST_ROOMS.value, "rooms": room.to_public()}
+    
+    # # gather all sessions of people in the room
+    # sessions: List[WSUser] = []
+    # for occ in room.players:
+    #     sessions.extend(state.connections(occ.player.user_id))
+    # await broadcast(payload, sessions)
+
+async def create_room(scope, name: str):
+    player: WSPlayer = scope["cyther.player"]
+    room_id = f"room-{player.user_id}"
+    room = WSRoom(room_id=room_id, name=name, owner_id=player.user_id)
+    room.add_player(player, is_owner=True)
+    state.add_room(room)
+    await update_rooms_for_all()
+    await scope["cyther.send"]({"type": WSType.SEND.value, "text": json.dumps({"type":"room_created","room":room.to_public()})})
+
+async def join_room(scope, room_id: Optional[str]):
+    if not room_id or room_id not in state.ROOMS:
+        await scope["cyther.send"](error_message("No such room"))
+        return
+    room = state.ROOMS[room_id]
+    player: WSPlayer = scope["cyther.player"]
+    if not room.has_player(player.user_id):
+        room.add_player(player)
+    await update_players_in_room(room_id)
+    await update_rooms_for_all(True)
+
+async def leave_room(scope, room_id: Optional[str]):
+    player: WSPlayer = scope["cyther.player"]
+    if not room_id:
+        room_id = player.room_id
+    if not room_id or room_id not in state.ROOMS:
+        return
+    room = state.ROOMS[room_id]
+    room.remove_player(player.user_id)
+    player.room_id = None
+
+    # If owner leaves, decide policy (close room, transfer, etc.). For now, close if empty.
+    if not room.players:
+        state.remove_room(room_id)
+    else:
+        if room.owner == player.user_id:
+            room.owner = room.players[0].player.user_id
+            room.set_turn_to(room.owner)
+    await update_players_in_room(room_id)
+    await update_rooms_for_all(True)
+
+async def close_room(scope, room_id: Optional[str]):
+    if not room_id or room_id not in state.ROOMS:
+        return
+    state.remove_room(room_id)
+    await scope["cyther.send"]({"type": WSType.SEND.value, "text": json.dumps({"type":"room_closed","room_id":room_id})})
+    await update_rooms_for_all()
+
+async def apply_health(scope, data: Dict[str, Any]):
+    """data: { owner: int, deltas: [{target, delta, commander}] }"""
+    owner = data.get("owner")
+    deltas = data.get("deltas") or []
+    sessions = state.connections(owner)
+
+    if not sessions:
+        return
+    owner_player = sessions[0].player
+    room_id = owner_player.room_id
+
+    if not room_id:
+        return
+    room = state.ROOMS.get(room_id)
+    if not room:
+        return
+
+    valid = {o.player.user_id for o in room.players}
+    for d in deltas:
+        tgt = d.get("target")
+        if tgt not in valid:
+            continue
+        delta = int(d.get("delta", 0))
+        cmd = bool(d.get("commander", False))
+        for occ in room.players:
+            if occ.player.user_id == tgt:
+                print('applied damage')
+                occ.player.apply_damage(owner, delta, commander=cmd)
+                break
+    await update_players_in_room(room_id)
+
+async def turn_next(scope, room_id: Optional[str]):
+    if not room_id:
+        player: WSPlayer = scope["cyther.player"]
+        room_id = player.room_id
+    if not room_id or room_id not in state.ROOMS:
+        return
+    room = state.ROOMS[room_id]
+    room.next_turn()
+    await update_players_in_room(room_id)
+
+async def turn_set(scope, room_id: Optional[str], user_id: Optional[int]):
+    if not room_id or room_id not in state.ROOMS or user_id is None:
+        return
+    room = state.ROOMS[room_id]
+    if room.set_turn_to(int(user_id)) is not None:
+        await update_players_in_room(room_id)

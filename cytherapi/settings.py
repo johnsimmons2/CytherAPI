@@ -29,7 +29,8 @@ SECRET_KEY = os.getenv('AUTH_SECRET', 'default-secret-key-1234567890abcdefghijkl
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'localhost'
+    'cyther.online',
+    'api.cyther.online'
 ]
 
 AUTH_USER_MODEL = 'users.User'
@@ -78,10 +79,11 @@ SPECTACULAR_SETTINGS = {
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', # TOP
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware', # COOKIE AUTH
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    
+    'django.contrib.auth.middleware.AuthenticationMiddleware', # AUTH
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -99,15 +101,26 @@ SESSION_COOKIE_SAMESITE = 'None'
 
 _CURRENT_ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 if _CURRENT_ENVIRONMENT == 'development' or _CURRENT_ENVIRONMENT == 'local':
-    cookie_domain_override = '.cyther.local'
+    # cookie_domain_override = '.cyther.local'
+    cookie_domain_override = 'localhost'
+    print("Setting up DEVELOPMENT CORS")
     ALLOWED_HOSTS.append('api.cyther.local')
+    ALLOWED_HOSTS.append('localhost')
+    ALLOWED_HOSTS.append('cyther.local')
     trusted_allowed_origins = [
-        # "http://localhost:8100", # HTTP
-        "https://cyther.local:8100" # HTTPS 
+        "localhost",
+        "http://localhost:8100", # HTTP
+        "https://localhost:8100", # HTTP
+        "https://api.cyther.local",
+        "https://localhost",
+        "https://cyther.local" # HTTPS 
     ]
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SAMESITE = 'Lax'
 else:
     cookie_domain_override = '.cyther.online'
-    ALLOWED_HOSTS.append('api.cyther.online')
     trusted_allowed_origins = [
         "https://cyther.online" # HTTPS 
     ]
@@ -133,7 +146,7 @@ CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = 'cytherapi.urls'
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend'
+    'django.contrib.auth.backends.ModelBackend' # AUTH BACKEND
 ]
 
 TEMPLATES = [

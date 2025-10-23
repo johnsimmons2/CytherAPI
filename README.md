@@ -5,6 +5,9 @@ python manage.py createsuperuser
 gunicorn runs the server for linux, uvicorn for windows.
 `<gunicorn|uvicorn> cytherapi.asgi:application`
 
+`uvicorn cytherapi.asgi:application --port 5000 --reload`
+`uvicorn cytherapi.asgi:application --ssl-certfile .\certs\cyther.local.pem --ssl-keyfile .\certs\cyther.local-key.pem --port 5000 --timeout-keep-alive 30 --ws-ping-timeout 15`
+
 
 HTTP: Not supported anymore.
 `python manage.py runserver`

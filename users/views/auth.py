@@ -23,9 +23,10 @@ def login_view(request: Request) -> JsonResponse:
     password = data.get('password')
     
     user = authenticate(request, username=username, password=password)
+    user_data = UserSerializer(user).data
     if user is not None:
         login(request, user)
-        return OK("Login successful.", username=user.username)
+        return OK("Login successful.", user=user_data)
     else:
         return UNAUTHORIZED("Invalid username or password.")
 
@@ -89,4 +90,4 @@ def auth_check(request: Request) -> JsonResponse:
     groups = list(request.user.groups.values_list('name', flat=True))
     user_data = UserSerializer(request.user).data
     
-    return OK("success", user_groups=groups, user=user_data)
+    return OK("success", groups=groups, user=user_data)
